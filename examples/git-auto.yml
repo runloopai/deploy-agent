@@ -1,0 +1,28 @@
+name: Deploy Git Agent (Auto)
+
+# This workflow demonstrates deploying an agent from the current Git repository
+# automatically. The action will use the current commit SHA and repository URL.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy agent to Runloop
+        uses: ./deploy-agent # Or: uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: git
+          # agent-name defaults to repository name if not provided
+          # git-repository defaults to current repository
+          # git-ref defaults to current commit SHA
+          setup-commands: |
+            chmod +x scripts/agent.sh
+            echo "Agent setup complete"

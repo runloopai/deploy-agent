@@ -1,0 +1,36 @@
+name: Deploy Single File Agent
+
+# This workflow demonstrates uploading a single file as an agent.
+# This is useful for deploying standalone scripts.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/agent.sh'
+  workflow_dispatch:
+
+jobs:
+  deploy-file-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy single file agent to Runloop
+        id: deploy
+        uses: ./deploy-agent # Or: uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: file
+          agent-name: my-script-agent
+          path: ./scripts/agent.sh  # Path to single file
+          setup-commands: |
+            chmod +x agent.sh
+
+      - name: Print deployment info
+        run: |
+          echo "Agent deployed successfully!"
+          echo "Agent ID: ${{ steps.deploy.outputs.agent-id }}"
+          echo "Agent Name: ${{ steps.deploy.outputs.agent-name }}"
+          echo "Object ID: ${{ steps.deploy.outputs.object-id }}"
