@@ -1,0 +1,153 @@
+name: Deploy Tar Agent
+
+# This workflow demonstrates deploying an agent from a tar archive.
+# You create the tar file yourself, giving you full control over packaging.
+
+on:
+  workflow_dispatch:
+    inputs:
+      archive-format:
+        description: 'Archive format to use'
+        required: false
+        default: 'tar.gz'
+        type: choice
+        options:
+          - tar.gz
+          - tar
+          - tgz
+  push:
+    branches:
+      - main
+    paths:
+      - 'agent/**'
+
+jobs:
+  deploy-tar-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Example 1: Simple tar.gz creation
+      - name: Create tar.gz archive
+        run: |
+          # Create a tar.gz from a directory
+          # -c: create archive
+          # -z: compress with gzip
+          # -f: output filename
+          # -C: change to directory before archiving
+          tar -czf agent.tar.gz -C ./agent .
+
+          echo "Created agent.tar.gz ($(du -h agent.tar.gz | cut -f1))"
+
+      - name: Deploy tar.gz agent
+        uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: tar
+          path: agent.tar.gz
+          agent-name: my-tar-agent
+          setup-commands: |
+            chmod +x setup.sh
+            ./setup.sh
+
+  deploy-with-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Example 2: Build process with step outputs
+      - name: Build and package agent
+        id: build
+        run: |
+          # Your custom build process
+          echo "Building agent..."
+          mkdir -p dist
+
+          # Example: compile, minify, or prepare files
+          cp -r src/* dist/
+
+          # Create tar archive
+          cd dist
+          tar -czf ../my-agent.tar.gz .
+          cd ..
+
+          # Output the path for next step
+          echo "archive-path=my-agent.tar.gz" >> $GITHUB_OUTPUT
+          echo "agent-version=v$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+      - name: Deploy built agent
+        uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: tar
+          path: ${{ steps.build.outputs.archive-path }}
+          agent-name: built-agent-${{ steps.build.outputs.agent-version }}
+
+  deploy-uncompressed-tar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Example 3: Uncompressed .tar format
+      - name: Create uncompressed tar
+        run: |
+          # Create a .tar without compression (useful for already-compressed files)
+          tar -cf agent.tar -C ./agent .
+
+      - name: Deploy tar agent
+        uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: tar
+          path: agent.tar
+
+  deploy-with-exclusions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Example 4: Custom tar with exclusions
+      - name: Create tar with exclusions
+        run: |
+          # Create tar excluding certain files/directories
+          tar -czf agent.tar.gz \
+            -C ./agent \
+            --exclude='*.log' \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            .
+
+      - name: Deploy agent
+        uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: tar
+          path: agent.tar.gz
+          object-ttl-days: 30
+          is-public: false
+
+  deploy-from-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Example 5: Using artifacts from a previous job/workflow
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: agent-package
+          path: ./artifacts
+
+      - name: Deploy from artifact
+        uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: tar
+          path: ./artifacts/agent.tar.gz

@@ -1,0 +1,110 @@
+name: 'Deploy Agent to Runloop'
+description: 'Deploy an agent to the Runloop platform with support for multiple source types (Git, files, and directories)'
+author: 'Runloop'
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  # Required inputs
+  api-key:
+    description: 'Runloop API key for authentication (set as secret)'
+    required: true
+
+  source-type:
+    description: 'Agent source type: git, tar, or file'
+    required: true
+
+  # Optional inputs
+  agent-name:
+    description: 'Name for the agent (defaults to repository name if not provided)'
+    required: false
+
+  # Git source inputs
+  git-repository:
+    description: 'Git repository URL (optional override, defaults to current repository)'
+    required: false
+
+  git-ref:
+    description: 'Git ref (branch/tag/commit SHA). Defaults to current commit or release tag'
+    required: false
+
+  # File/tar source inputs
+  path:
+    description: 'Path to file or tar archive (required if source-type=tar/file)'
+    required: false
+
+  # Common inputs
+  setup-commands:
+    description: 'Newline-separated setup commands to run after agent installation'
+    required: false
+
+  is-public:
+    description: 'Whether the agent should be publicly accessible'
+    required: false
+    default: 'false'
+
+  api-url:
+    description: 'Runloop API URL (defaults to production)'
+    required: false
+    default: 'https://api.runloop.ai'
+
+  object-ttl-days:
+    description: 'Time-to-live for uploaded objects in days (optional)'
+    required: false
+
+outputs:
+  agent-id:
+    description: 'The ID of the created agent (e.g., agt_xxxx)'
+    value: ${{ steps.deploy-agent.outputs.agent-id }}
+
+  object-id:
+    description: 'The ID of the uploaded object (if applicable, e.g., obj_xxxx)'
+    value: ${{ steps.deploy-agent.outputs.object-id }}
+
+  agent-name:
+    description: 'The final name of the created agent'
+    value: ${{ steps.deploy-agent.outputs.agent-name }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 9
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        pnpm install --prod --frozen-lockfile
+
+    - name: Deploy agent
+      id: deploy-agent
+      shell: bash
+      env:
+        INPUT_API_KEY: ${{ inputs.api-key }}
+        INPUT_SOURCE_TYPE: ${{ inputs.source-type }}
+        INPUT_AGENT_NAME: ${{ inputs.agent-name }}
+        INPUT_GIT_REPOSITORY: ${{ inputs.git-repository }}
+        INPUT_GIT_REF: ${{ inputs.git-ref }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_SETUP_COMMANDS: ${{ inputs.setup-commands }}
+        INPUT_IS_PUBLIC: ${{ inputs.is-public }}
+        INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_OBJECT_TTL_DAYS: ${{ inputs.object-ttl-days }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+      run: |
+        cd ${{ github.action_path }}
+        node dist/index.js

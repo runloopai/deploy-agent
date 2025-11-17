@@ -1,0 +1,38 @@
+name: Deploy Git Agent (On Release)
+
+# This workflow demonstrates deploying an agent when a new release is published.
+# The action will automatically use the release tag as the git-ref.
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy agent to Runloop
+        id: deploy
+        uses: ./deploy-agent # Or: uses: runloop/deploy-agent@v1
+        with:
+          api-key: ${{ secrets.RUNLOOP_API_KEY }}
+          source-type: git
+          agent-name: my-agent-${{ github.event.release.tag_name }}
+          # git-ref automatically uses the release tag
+          setup-commands: |
+            npm install
+            npm run build
+
+      - name: Comment on release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createReleaseComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: context.payload.release.id,
+              body: `✅ Agent deployed!\n\nAgent ID: \`${{ steps.deploy.outputs.agent-id }}\``
+            });
