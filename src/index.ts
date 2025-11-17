@@ -53,7 +53,7 @@ async function run(): Promise<void> {
     }
     core.info('');
     core.info(
-      `🔗 View your agent at: ${inputs.apiUrl.replace('/v1', '')}/agents/${result.agentId}`
+      `🔗 View your agent at: ${inputs.apiUrl.replace('/v1', '').replace('api','platform')}/agents/${result.agentId}`
     );
   } catch (error) {
     // Handle errors
