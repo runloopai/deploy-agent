@@ -18,7 +18,7 @@ A GitHub Action to deploy agents to the [Runloop](https://runloop.ai) platform. 
 
 ```yaml
 - name: Deploy agent
-  uses: runloop/deploy-agent@v1
+  uses: runloopai/deploy-agent@main
   with:
     api-key: ${{ secrets.RUNLOOP_API_KEY }}
     source-type: git
@@ -59,7 +59,7 @@ That's it! The action will automatically use your current repository and commit 
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: runloop/deploy-agent@v1
+- uses: runloopai/deploy-agent@main
   with:
     api-key: ${{ secrets.RUNLOOP_API_KEY }}
     source-type: git
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: runloop/deploy-agent@v1
+      - uses: runloopai/deploy-agent@main
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: git
@@ -101,7 +101,7 @@ Basic example:
 
 # Then deploy it
 - name: Deploy agent
-  uses: runloop/deploy-agent@v1
+  uses: runloopai/deploy-agent@main
   with:
     api-key: ${{ secrets.RUNLOOP_API_KEY }}
     source-type: tar
@@ -119,7 +119,7 @@ You can also use `.tar` format or reference output from a previous step:
     make package
     echo "archive-path=dist/my-agent.tar.gz" >> $GITHUB_OUTPUT
 
-- uses: runloop/deploy-agent@v1
+- uses: runloopai/deploy-agent@main
   with:
     api-key: ${{ secrets.RUNLOOP_API_KEY }}
     source-type: tar
@@ -129,7 +129,7 @@ You can also use `.tar` format or reference output from a previous step:
 ### Single File
 
 ```yaml
-- uses: runloop/deploy-agent@v1
+- uses: runloopai/deploy-agent@main
   with:
     api-key: ${{ secrets.RUNLOOP_API_KEY }}
     source-type: file
@@ -158,12 +158,24 @@ Store your Runloop API key as a GitHub secret:
 pnpm install
 ```
 
-### Building
+### Testing with act
+
+You can test the action locally using [act](https://github.com/nektos/act):
 
 ```bash
-pnpm run build        # Build TypeScript
+act -j deploy --secret RUNLOOP_API_KEY=your_api_key
+```
+
+### Building
+
+The action uses [@vercel/ncc](https://github.com/vercel/ncc) to bundle all dependencies into a single file.
+
+```bash
+pnpm run build        # Bundle with ncc (creates dist/index.js)
 pnpm run rebuild      # Clean and build
 ```
+
+After building, commit the `dist/` folder as it's required for the action to run.
 
 ### Code Quality
 

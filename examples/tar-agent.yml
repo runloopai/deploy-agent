@@ -41,7 +41,7 @@ jobs:
           echo "Created agent.tar.gz ($(du -h agent.tar.gz | cut -f1))"
 
       - name: Deploy tar.gz agent
-        uses: runloop/deploy-agent@v1
+        uses: runloopai/deploy-agent@main
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
@@ -78,7 +78,7 @@ jobs:
           echo "agent-version=v$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
 
       - name: Deploy built agent
-        uses: runloop/deploy-agent@v1
+        uses: runloopai/deploy-agent@main
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
@@ -98,7 +98,7 @@ jobs:
           tar -cf agent.tar -C ./agent .
 
       - name: Deploy tar agent
-        uses: runloop/deploy-agent@v1
+        uses: runloopai/deploy-agent@main
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
@@ -124,7 +124,7 @@ jobs:
             .
 
       - name: Deploy agent
-        uses: runloop/deploy-agent@v1
+        uses: runloopai/deploy-agent@main
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
@@ -146,7 +146,7 @@ jobs:
           path: ./artifacts
 
       - name: Deploy from artifact
-        uses: runloop/deploy-agent@v1
+        uses: runloopai/deploy-agent@main
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar

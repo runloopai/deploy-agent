@@ -16,7 +16,7 @@ jobs:
 
       - name: Deploy agent to Runloop
         id: deploy
-        uses: ./deploy-agent # Or: uses: runloop/deploy-agent@v1
+        uses: ./deploy-agent # Or: uses: runloopai/deploy-agent@main
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: git

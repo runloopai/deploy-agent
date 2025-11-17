@@ -56,55 +56,13 @@ inputs:
 outputs:
   agent-id:
     description: 'The ID of the created agent (e.g., agt_xxxx)'
-    value: ${{ steps.deploy-agent.outputs.agent-id }}
 
   object-id:
     description: 'The ID of the uploaded object (if applicable, e.g., obj_xxxx)'
-    value: ${{ steps.deploy-agent.outputs.object-id }}
 
   agent-name:
     description: 'The final name of the created agent'
-    value: ${{ steps.deploy-agent.outputs.agent-name }}
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v3
-      with:
-        version: 9
-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        cd ${{ github.action_path }}
-        pnpm install --prod --frozen-lockfile
-
-    - name: Deploy agent
-      id: deploy-agent
-      shell: bash
-      env:
-        INPUT_API_KEY: ${{ inputs.api-key }}
-        INPUT_SOURCE_TYPE: ${{ inputs.source-type }}
-        INPUT_AGENT_NAME: ${{ inputs.agent-name }}
-        INPUT_GIT_REPOSITORY: ${{ inputs.git-repository }}
-        INPUT_GIT_REF: ${{ inputs.git-ref }}
-        INPUT_PATH: ${{ inputs.path }}
-        INPUT_SETUP_COMMANDS: ${{ inputs.setup-commands }}
-        INPUT_IS_PUBLIC: ${{ inputs.is-public }}
-        INPUT_API_URL: ${{ inputs.api-url }}
-        INPUT_OBJECT_TTL_DAYS: ${{ inputs.object-ttl-days }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
-        GITHUB_SHA: ${{ github.sha }}
-        GITHUB_REF: ${{ github.ref }}
-        GITHUB_REF_NAME: ${{ github.ref_name }}
-        GITHUB_EVENT_NAME: ${{ github.event_name }}
-        GITHUB_WORKSPACE: ${{ github.workspace }}
-      run: |
-        cd ${{ github.action_path }}
-        node dist/index.js
+  using: 'node20'
+  main: 'dist/index.js'
