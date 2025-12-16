@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as fs from 'fs';
 import * as path from 'path';
-import Runloop from '@runloop/api-client';
+import { RunloopSDK } from '@runloop/api-client';
 
 export interface UploadResult {
   objectId: string;
@@ -12,7 +12,7 @@ export interface UploadResult {
  * Upload a tar.gz file directly.
  */
 export async function uploadTarFile(
-  client: Runloop,
+  client: RunloopSDK,
   filePath: string,
   ttlDays?: number
 ): Promise<UploadResult> {
@@ -40,7 +40,7 @@ export async function uploadTarFile(
  * Upload a single file (text or binary).
  */
 export async function uploadSingleFile(
-  client: Runloop,
+  client: RunloopSDK,
   filePath: string,
   ttlDays?: number
 ): Promise<UploadResult> {
@@ -63,7 +63,7 @@ export async function uploadSingleFile(
  * 3. Complete the upload
  */
 async function uploadBuffer(
-  client: Runloop,
+  client: RunloopSDK,
   buffer: Buffer,
   objectName: string,
   contentType: 'text' | 'binary' | 'gzip' | 'tar' | 'tgz',
@@ -84,7 +84,7 @@ async function uploadBuffer(
   };
 
   core.info('Creating object...');
-  const createdObject = await client.objects.create(createParams);
+  const createdObject = await client.api.objects.create(createParams);
 
   if (!createdObject.upload_url) {
     throw new Error('Object creation did not return an upload URL');
@@ -115,10 +115,10 @@ async function uploadBuffer(
 
   // Step 3: Complete the upload
   core.info('Completing object upload...');
-  const completedObject = await client.objects.complete(createdObject.id);
+  const completedObject = await client.api.objects.complete(createdObject.id);
 
-  if (completedObject.state !== 'read_only') {
-    core.warning(`Object state is ${completedObject.state}, expected read_only`);
+  if (completedObject.state !== 'READ_ONLY') {
+    core.warning(`Object state is ${completedObject.state}, expected READ_ONLY`);
   }
 
   core.info(`Object upload completed: ${completedObject.id}`);

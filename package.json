@@ -23,23 +23,23 @@
   "author": "Runloop",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.10.1",
-    "@actions/github": "^6.0.0",
-    "@runloop/api-client": "^0.67.1",
-    "ignore": "^5.3.1",
+    "@actions/core": "^2.0.1",
+    "@actions/github": "^6.0.1",
+    "@runloop/api-client": "^1.0.0",
+    "ignore": "^7.0.5",
     "tar-stream": "^3.1.7"
   },
   "devDependencies": {
-    "@types/node": "^20.11.19",
-    "@types/tar-stream": "^3.1.3",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
+    "@types/node": "^20.19.26",
+    "@types/tar-stream": "^3.1.4",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
     "@vercel/ncc": "^0.38.4",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.1.3",
-    "prettier": "^3.2.5",
-    "typescript": "^5.3.3"
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20"
