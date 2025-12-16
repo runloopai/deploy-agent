@@ -1,36 +1,9 @@
 import * as core from '@actions/core';
-import Runloop from '@runloop/api-client';
+import { RunloopSDK } from '@runloop/api-client';
 import { ActionInputs } from './validators';
 import { getGitContext, validateGitRepository, getDefaultAgentName } from './git-utils';
 import { uploadTarFile, uploadSingleFile } from './object-uploader';
 import { resolvePath } from './validators';
-
-// Type definitions for Agent API (since not in SDK yet)
-interface GitSource {
-  type: 'git';
-  git: {
-    repository: string;
-    ref: string;
-    agent_setup: string[];
-  };
-}
-
-interface ObjectSource {
-  type: 'object';
-  object: {
-    object_id: string;
-    agent_setup: string[];
-  };
-}
-
-type AgentSource = GitSource | ObjectSource;
-
-interface AgentView {
-  id: string;
-  name: string;
-  is_public: boolean;
-  source: AgentSource;
-}
 
 export interface DeploymentResult {
   agentId: string;
@@ -38,12 +11,17 @@ export interface DeploymentResult {
   objectId?: string;
 }
 
+interface AgentResponse {
+  id: string;
+  name: string;
+}
+
 /**
  * Deploy an agent to Runloop based on the source type.
  */
 export async function deployAgent(inputs: ActionInputs): Promise<DeploymentResult> {
   // Initialize Runloop client
-  const client = new Runloop({
+  const client = new RunloopSDK({
     bearerToken: inputs.apiKey,
     baseURL: inputs.apiUrl,
   });
@@ -89,7 +67,7 @@ export async function deployAgent(inputs: ActionInputs): Promise<DeploymentResul
  * Deploy an agent from a Git repository.
  */
 async function deployGitAgent(
-  client: Runloop,
+  client: RunloopSDK,
   agentName: string,
   inputs: ActionInputs
 ): Promise<DeploymentResult> {
@@ -100,9 +78,11 @@ async function deployGitAgent(
   validateGitRepository(gitContext.repository);
 
   // Create agent with Git source
-  const agent: AgentView = await client.post('/v1/agents', {
+  // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
+  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
+      version: inputs.agentVersion,
       is_public: inputs.isPublic,
       source: {
         type: 'git',
@@ -125,7 +105,7 @@ async function deployGitAgent(
  * Deploy an agent from a tar file.
  */
 async function deployTarAgent(
-  client: Runloop,
+  client: RunloopSDK,
   agentName: string,
   inputs: ActionInputs
 ): Promise<DeploymentResult> {
@@ -141,9 +121,11 @@ async function deployTarAgent(
   const uploadResult = await uploadTarFile(client, tarPath, inputs.objectTtlDays);
 
   // Create agent with object source
-  const agent: AgentView = await client.post('/v1/agents', {
+  // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
+  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
+      version: inputs.agentVersion,
       is_public: inputs.isPublic,
       source: {
         type: 'object',
@@ -166,7 +148,7 @@ async function deployTarAgent(
  * Deploy an agent from a single file.
  */
 async function deployFileAgent(
-  client: Runloop,
+  client: RunloopSDK,
   agentName: string,
   inputs: ActionInputs
 ): Promise<DeploymentResult> {
@@ -182,9 +164,11 @@ async function deployFileAgent(
   const uploadResult = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
 
   // Create agent with object source
-  const agent: AgentView = await client.post('/v1/agents', {
+  // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
+  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
+      version: inputs.agentVersion,
       is_public: inputs.isPublic,
       source: {
         type: 'object',
