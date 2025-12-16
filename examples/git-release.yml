@@ -20,6 +20,7 @@ jobs:
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: git
+          agent-version: ${{ github.event.release.tag_name }}
           agent-name: my-agent-${{ github.event.release.tag_name }}
           # git-ref automatically uses the release tag
           setup-commands: |

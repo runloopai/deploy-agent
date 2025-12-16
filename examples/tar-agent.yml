@@ -45,6 +45,7 @@ jobs:
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
+          agent-version: 1.0.0
           path: agent.tar.gz
           agent-name: my-tar-agent
           setup-commands: |
@@ -82,6 +83,7 @@ jobs:
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
+          agent-version: ${{ steps.build.outputs.agent-version }}
           path: ${{ steps.build.outputs.archive-path }}
           agent-name: built-agent-${{ steps.build.outputs.agent-version }}
 
@@ -102,6 +104,7 @@ jobs:
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
+          agent-version: 1.0.0
           path: agent.tar
 
   deploy-with-exclusions:
@@ -128,6 +131,7 @@ jobs:
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
+          agent-version: 1.0.0
           path: agent.tar.gz
           object-ttl-days: 30
           is-public: false
@@ -150,4 +154,5 @@ jobs:
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: tar
+          agent-version: 1.0.0
           path: ./artifacts/agent.tar.gz

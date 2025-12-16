@@ -20,6 +20,7 @@ jobs:
         with:
           api-key: ${{ secrets.RUNLOOP_API_KEY }}
           source-type: git
+          agent-version: 1.0.0
           # agent-name defaults to repository name if not provided
           # git-repository defaults to current repository
           # git-ref defaults to current commit SHA
