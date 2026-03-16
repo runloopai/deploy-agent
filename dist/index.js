@@ -37407,7 +37407,8 @@ function getInputs() {
         pipPackage: core.getInput('pip-package') || undefined,
         pipIndexUrl: core.getInput('pip-index-url') || undefined,
         binary: core.getInput('binary') || undefined,
-        axonAttachProtocol: (core.getInput('axon-attach-protocol') || undefined),
+        axonAttachProtocol: (core.getInput('axon-attach-protocol') ||
+            undefined),
         setupCommands: setupCommandsRaw
             ? setupCommandsRaw
                 .split('\n')
