@@ -45,7 +45,8 @@ export function getInputs(): ActionInputs {
     pipPackage: core.getInput('pip-package') || undefined,
     pipIndexUrl: core.getInput('pip-index-url') || undefined,
     binary: core.getInput('binary') || undefined,
-    axonAttachProtocol: (core.getInput('axon-attach-protocol') || undefined) as ActionInputs['axonAttachProtocol'],
+    axonAttachProtocol: (core.getInput('axon-attach-protocol') ||
+      undefined) as ActionInputs['axonAttachProtocol'],
     setupCommands: setupCommandsRaw
       ? setupCommandsRaw
           .split('\n')
