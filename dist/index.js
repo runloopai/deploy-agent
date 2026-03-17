@@ -36686,19 +36686,6 @@ const git_utils_1 = __nccwpck_require__(2838);
 const object_uploader_1 = __nccwpck_require__(562);
 const validators_1 = __nccwpck_require__(7711);
 /**
- * Build optional top-level fields (binary, axon_attach_config) from inputs.
- */
-function buildOptionalFields(inputs) {
-    const fields = {};
-    if (inputs.binary) {
-        fields.binary = inputs.binary;
-    }
-    if (inputs.axonAttachProtocol) {
-        fields.axon_attach_config = { protocol: inputs.axonAttachProtocol };
-    }
-    return fields;
-}
-/**
  * Deploy an agent to Runloop based on the source type.
  */
 async function deployAgent(inputs) {
@@ -36757,7 +36744,6 @@ async function deployGitAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
-            ...buildOptionalFields(inputs),
             source: {
                 type: 'git',
                 git: {
@@ -36791,7 +36777,6 @@ async function deployTarAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
-            ...buildOptionalFields(inputs),
             source: {
                 type: 'object',
                 object: {
@@ -36825,7 +36810,6 @@ async function deployFileAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
-            ...buildOptionalFields(inputs),
             source: {
                 type: 'object',
                 object: {
@@ -36863,7 +36847,6 @@ async function deployNpmAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
-            ...buildOptionalFields(inputs),
             source: {
                 type: 'npm',
                 npm: npmSource,
@@ -36897,7 +36880,6 @@ async function deployPipAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
-            ...buildOptionalFields(inputs),
             source: {
                 type: 'pip',
                 pip: pipSource,
@@ -37406,9 +37388,6 @@ function getInputs() {
         npmRegistryUrl: core.getInput('npm-registry-url') || undefined,
         pipPackage: core.getInput('pip-package') || undefined,
         pipIndexUrl: core.getInput('pip-index-url') || undefined,
-        binary: core.getInput('binary') || undefined,
-        axonAttachProtocol: (core.getInput('axon-attach-protocol') ||
-            undefined),
         setupCommands: setupCommandsRaw
             ? setupCommandsRaw
                 .split('\n')
@@ -37466,13 +37445,6 @@ function validateInputs(inputs) {
     if (inputs.objectTtlDays !== undefined) {
         if (isNaN(inputs.objectTtlDays) || inputs.objectTtlDays <= 0) {
             throw new Error('object-ttl-days must be a positive number');
-        }
-    }
-    // Validate axonAttachProtocol if provided
-    if (inputs.axonAttachProtocol !== undefined) {
-        const validProtocols = ['acp', 'claude', 'codex'];
-        if (!validProtocols.includes(inputs.axonAttachProtocol)) {
-            throw new Error(`Invalid axon-attach-protocol: "${inputs.axonAttachProtocol}". Must be one of: ${validProtocols.join(', ')}`);
         }
     }
 }
