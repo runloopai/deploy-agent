@@ -112,7 +112,6 @@ export function validateInputs(inputs: ActionInputs): void {
       throw new Error('object-ttl-days must be a positive number');
     }
   }
-
 }
 
 function validatePath(inputPath: string, sourceType: SourceType): void {
