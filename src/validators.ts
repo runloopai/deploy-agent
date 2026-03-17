@@ -14,8 +14,6 @@ export interface ActionInputs {
   npmRegistryUrl?: string;
   pipPackage?: string;
   pipIndexUrl?: string;
-  binary?: string;
-  axonAttachProtocol?: AxonAttachProtocol;
   setupCommands?: string[];
   isPublic: boolean;
   apiUrl: string;
@@ -23,7 +21,6 @@ export interface ActionInputs {
 }
 
 export type SourceType = 'git' | 'tar' | 'file' | 'npm' | 'pip';
-export type AxonAttachProtocol = 'acp' | 'claude' | 'codex';
 
 export function getInputs(): ActionInputs {
   // Get all inputs
@@ -44,9 +41,6 @@ export function getInputs(): ActionInputs {
     npmRegistryUrl: core.getInput('npm-registry-url') || undefined,
     pipPackage: core.getInput('pip-package') || undefined,
     pipIndexUrl: core.getInput('pip-index-url') || undefined,
-    binary: core.getInput('binary') || undefined,
-    axonAttachProtocol: (core.getInput('axon-attach-protocol') ||
-      undefined) as ActionInputs['axonAttachProtocol'],
     setupCommands: setupCommandsRaw
       ? setupCommandsRaw
           .split('\n')
@@ -119,15 +113,6 @@ export function validateInputs(inputs: ActionInputs): void {
     }
   }
 
-  // Validate axonAttachProtocol if provided
-  if (inputs.axonAttachProtocol !== undefined) {
-    const validProtocols: AxonAttachProtocol[] = ['acp', 'claude', 'codex'];
-    if (!validProtocols.includes(inputs.axonAttachProtocol)) {
-      throw new Error(
-        `Invalid axon-attach-protocol: "${inputs.axonAttachProtocol}". Must be one of: ${validProtocols.join(', ')}`
-      );
-    }
-  }
 }
 
 function validatePath(inputPath: string, sourceType: SourceType): void {

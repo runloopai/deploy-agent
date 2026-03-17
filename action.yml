@@ -51,15 +51,6 @@ inputs:
     description: 'PyPI index URL (optional, defaults to public PyPI)'
     required: false
 
-  # Agent runtime inputs
-  binary:
-    description: 'Agent binary path (e.g., "claude", "codex")'
-    required: false
-
-  axon-attach-protocol:
-    description: 'Axon attach protocol: acp, claude, or codex'
-    required: false
-
   # File/tar source inputs
   path:
     description: 'Path to file or tar archive (required if source-type=tar/file)'

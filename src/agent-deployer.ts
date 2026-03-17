@@ -17,20 +17,6 @@ interface AgentResponse {
 }
 
 /**
- * Build optional top-level fields (binary, axon_attach_config) from inputs.
- */
-function buildOptionalFields(inputs: ActionInputs): Record<string, unknown> {
-  const fields: Record<string, unknown> = {};
-  if (inputs.binary) {
-    fields.binary = inputs.binary;
-  }
-  if (inputs.axonAttachProtocol) {
-    fields.axon_attach_config = { protocol: inputs.axonAttachProtocol };
-  }
-  return fields;
-}
-
-/**
  * Deploy an agent to Runloop based on the source type.
  */
 export async function deployAgent(inputs: ActionInputs): Promise<DeploymentResult> {
@@ -106,7 +92,6 @@ async function deployGitAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
-      ...buildOptionalFields(inputs),
       source: {
         type: 'git',
         git: {
@@ -150,7 +135,6 @@ async function deployTarAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
-      ...buildOptionalFields(inputs),
       source: {
         type: 'object',
         object: {
@@ -194,7 +178,6 @@ async function deployFileAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
-      ...buildOptionalFields(inputs),
       source: {
         type: 'object',
         object: {
@@ -241,7 +224,6 @@ async function deployNpmAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
-      ...buildOptionalFields(inputs),
       source: {
         type: 'npm',
         npm: npmSource,
@@ -284,7 +266,6 @@ async function deployPipAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
-      ...buildOptionalFields(inputs),
       source: {
         type: 'pip',
         pip: pipSource,
