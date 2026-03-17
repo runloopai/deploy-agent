@@ -46,6 +46,14 @@ export async function deployAgent(inputs: ActionInputs): Promise<DeploymentResul
       result = await deployFileAgent(client, agentName, inputs);
       break;
 
+    case 'npm':
+      result = await deployNpmAgent(client, agentName, inputs);
+      break;
+
+    case 'pip':
+      result = await deployPipAgent(client, agentName, inputs);
+      break;
+
     default: {
       // Exhaustiveness check - this should never happen
       const exhaustiveCheck: never = inputs.sourceType;
@@ -184,5 +192,89 @@ async function deployFileAgent(
     agentId: agent.id,
     agentName: agent.name,
     objectId: uploadResult.objectId,
+  };
+}
+
+/**
+ * Deploy an agent from an NPM package.
+ */
+async function deployNpmAgent(
+  client: RunloopSDK,
+  agentName: string,
+  inputs: ActionInputs
+): Promise<DeploymentResult> {
+  core.info('Deploying NPM agent...');
+
+  if (!inputs.npmPackage) {
+    throw new Error('npm-package is required for npm agent deployment');
+  }
+
+  const npmSource: Record<string, unknown> = {
+    package_name: inputs.npmPackage,
+  };
+  if (inputs.npmRegistryUrl) {
+    npmSource.registry_url = inputs.npmRegistryUrl;
+  }
+  if (inputs.setupCommands && inputs.setupCommands.length > 0) {
+    npmSource.agent_setup = inputs.setupCommands;
+  }
+
+  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
+    body: {
+      name: agentName,
+      version: inputs.agentVersion,
+      is_public: inputs.isPublic,
+      source: {
+        type: 'npm',
+        npm: npmSource,
+      },
+    },
+  });
+
+  return {
+    agentId: agent.id,
+    agentName: agent.name,
+  };
+}
+
+/**
+ * Deploy an agent from a PyPI package.
+ */
+async function deployPipAgent(
+  client: RunloopSDK,
+  agentName: string,
+  inputs: ActionInputs
+): Promise<DeploymentResult> {
+  core.info('Deploying pip agent...');
+
+  if (!inputs.pipPackage) {
+    throw new Error('pip-package is required for pip agent deployment');
+  }
+
+  const pipSource: Record<string, unknown> = {
+    package_name: inputs.pipPackage,
+  };
+  if (inputs.pipIndexUrl) {
+    pipSource.index_url = inputs.pipIndexUrl;
+  }
+  if (inputs.setupCommands && inputs.setupCommands.length > 0) {
+    pipSource.agent_setup = inputs.setupCommands;
+  }
+
+  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
+    body: {
+      name: agentName,
+      version: inputs.agentVersion,
+      is_public: inputs.isPublic,
+      source: {
+        type: 'pip',
+        pip: pipSource,
+      },
+    },
+  });
+
+  return {
+    agentId: agent.id,
+    agentName: agent.name,
   };
 }

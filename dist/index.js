@@ -36709,6 +36709,12 @@ async function deployAgent(inputs) {
         case 'file':
             result = await deployFileAgent(client, agentName, inputs);
             break;
+        case 'npm':
+            result = await deployNpmAgent(client, agentName, inputs);
+            break;
+        case 'pip':
+            result = await deployPipAgent(client, agentName, inputs);
+            break;
         default: {
             // Exhaustiveness check - this should never happen
             const exhaustiveCheck = inputs.sourceType;
@@ -36817,6 +36823,72 @@ async function deployFileAgent(client, agentName, inputs) {
         agentId: agent.id,
         agentName: agent.name,
         objectId: uploadResult.objectId,
+    };
+}
+/**
+ * Deploy an agent from an NPM package.
+ */
+async function deployNpmAgent(client, agentName, inputs) {
+    core.info('Deploying NPM agent...');
+    if (!inputs.npmPackage) {
+        throw new Error('npm-package is required for npm agent deployment');
+    }
+    const npmSource = {
+        package_name: inputs.npmPackage,
+    };
+    if (inputs.npmRegistryUrl) {
+        npmSource.registry_url = inputs.npmRegistryUrl;
+    }
+    if (inputs.setupCommands && inputs.setupCommands.length > 0) {
+        npmSource.agent_setup = inputs.setupCommands;
+    }
+    const agent = await client.api.post('/v1/agents', {
+        body: {
+            name: agentName,
+            version: inputs.agentVersion,
+            is_public: inputs.isPublic,
+            source: {
+                type: 'npm',
+                npm: npmSource,
+            },
+        },
+    });
+    return {
+        agentId: agent.id,
+        agentName: agent.name,
+    };
+}
+/**
+ * Deploy an agent from a PyPI package.
+ */
+async function deployPipAgent(client, agentName, inputs) {
+    core.info('Deploying pip agent...');
+    if (!inputs.pipPackage) {
+        throw new Error('pip-package is required for pip agent deployment');
+    }
+    const pipSource = {
+        package_name: inputs.pipPackage,
+    };
+    if (inputs.pipIndexUrl) {
+        pipSource.index_url = inputs.pipIndexUrl;
+    }
+    if (inputs.setupCommands && inputs.setupCommands.length > 0) {
+        pipSource.agent_setup = inputs.setupCommands;
+    }
+    const agent = await client.api.post('/v1/agents', {
+        body: {
+            name: agentName,
+            version: inputs.agentVersion,
+            is_public: inputs.isPublic,
+            source: {
+                type: 'pip',
+                pip: pipSource,
+            },
+        },
+    });
+    return {
+        agentId: agent.id,
+        agentName: agent.name,
     };
 }
 
@@ -37312,6 +37384,10 @@ function getInputs() {
         gitRepository: core.getInput('git-repository') || undefined,
         gitRef: core.getInput('git-ref') || undefined,
         path: core.getInput('path') || undefined,
+        npmPackage: core.getInput('npm-package') || undefined,
+        npmRegistryUrl: core.getInput('npm-registry-url') || undefined,
+        pipPackage: core.getInput('pip-package') || undefined,
+        pipIndexUrl: core.getInput('pip-index-url') || undefined,
         setupCommands: setupCommandsRaw
             ? setupCommandsRaw
                 .split('\n')
@@ -37326,7 +37402,7 @@ function getInputs() {
 }
 function validateInputs(inputs) {
     // Validate source type
-    const validSourceTypes = ['git', 'tar', 'file'];
+    const validSourceTypes = ['git', 'tar', 'file', 'npm', 'pip'];
     if (!validSourceTypes.includes(inputs.sourceType)) {
         throw new Error(`Invalid source-type: ${inputs.sourceType}. Must be one of: ${validSourceTypes.join(', ')}`);
     }
@@ -37342,6 +37418,16 @@ function validateInputs(inputs) {
         case 'git':
             // Git source doesn't require explicit repository (uses current repo by default)
             // Validation happens in git-utils.ts
+            break;
+        case 'npm':
+            if (!inputs.npmPackage) {
+                throw new Error('npm-package is required when source-type is "npm"');
+            }
+            break;
+        case 'pip':
+            if (!inputs.pipPackage) {
+                throw new Error('pip-package is required when source-type is "pip"');
+            }
             break;
         default: {
             // Exhaustiveness check - this should never happen

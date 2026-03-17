@@ -12,7 +12,7 @@ inputs:
     required: true
 
   source-type:
-    description: 'Agent source type: git, tar, or file'
+    description: 'Agent source type: git, tar, file, npm, or pip'
     required: true
 
   # Optional inputs
@@ -31,6 +31,24 @@ inputs:
 
   git-ref:
     description: 'Git ref (branch/tag/commit SHA). Defaults to current commit or release tag'
+    required: false
+
+  # NPM source inputs
+  npm-package:
+    description: 'NPM package name (required when source-type=npm, e.g., "@anthropic-ai/claude-code")'
+    required: false
+
+  npm-registry-url:
+    description: 'NPM registry URL (optional, defaults to public npm registry)'
+    required: false
+
+  # Pip source inputs
+  pip-package:
+    description: 'PyPI package name (required when source-type=pip, e.g., "deepagents-cli")'
+    required: false
+
+  pip-index-url:
+    description: 'PyPI index URL (optional, defaults to public PyPI)'
     required: false
 
   # File/tar source inputs

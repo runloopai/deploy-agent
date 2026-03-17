@@ -10,13 +10,17 @@ export interface ActionInputs {
   gitRepository?: string;
   gitRef?: string;
   path?: string;
+  npmPackage?: string;
+  npmRegistryUrl?: string;
+  pipPackage?: string;
+  pipIndexUrl?: string;
   setupCommands?: string[];
   isPublic: boolean;
   apiUrl: string;
   objectTtlDays?: number;
 }
 
-export type SourceType = 'git' | 'tar' | 'file';
+export type SourceType = 'git' | 'tar' | 'file' | 'npm' | 'pip';
 
 export function getInputs(): ActionInputs {
   // Get all inputs
@@ -33,6 +37,10 @@ export function getInputs(): ActionInputs {
     gitRepository: core.getInput('git-repository') || undefined,
     gitRef: core.getInput('git-ref') || undefined,
     path: core.getInput('path') || undefined,
+    npmPackage: core.getInput('npm-package') || undefined,
+    npmRegistryUrl: core.getInput('npm-registry-url') || undefined,
+    pipPackage: core.getInput('pip-package') || undefined,
+    pipIndexUrl: core.getInput('pip-index-url') || undefined,
     setupCommands: setupCommandsRaw
       ? setupCommandsRaw
           .split('\n')
@@ -49,7 +57,7 @@ export function getInputs(): ActionInputs {
 
 export function validateInputs(inputs: ActionInputs): void {
   // Validate source type
-  const validSourceTypes: SourceType[] = ['git', 'tar', 'file'];
+  const validSourceTypes: SourceType[] = ['git', 'tar', 'file', 'npm', 'pip'];
   if (!validSourceTypes.includes(inputs.sourceType)) {
     throw new Error(
       `Invalid source-type: ${inputs.sourceType}. Must be one of: ${validSourceTypes.join(', ')}`
@@ -69,6 +77,18 @@ export function validateInputs(inputs: ActionInputs): void {
     case 'git':
       // Git source doesn't require explicit repository (uses current repo by default)
       // Validation happens in git-utils.ts
+      break;
+
+    case 'npm':
+      if (!inputs.npmPackage) {
+        throw new Error('npm-package is required when source-type is "npm"');
+      }
+      break;
+
+    case 'pip':
+      if (!inputs.pipPackage) {
+        throw new Error('pip-package is required when source-type is "pip"');
+      }
       break;
 
     default: {
