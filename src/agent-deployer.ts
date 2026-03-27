@@ -222,17 +222,22 @@ async function deployNpmAgent(
     npmSource.agent_setup = inputs.setupCommands;
   }
 
-  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
-    body: {
-      name: agentName,
-      version: inputs.agentVersion,
-      is_public: inputs.isPublic,
-      ...(inputs.architecture && { architecture: inputs.architecture }),
-      source: {
-        type: 'npm',
-        npm: npmSource,
-      },
+  const body: Record<string, unknown> = {
+    name: agentName,
+    version: inputs.agentVersion,
+    is_public: inputs.isPublic,
+    ...(inputs.architecture && { architecture: inputs.architecture }),
+    source: {
+      type: 'npm',
+      npm: npmSource,
     },
+  };
+  if (inputs.customSkill) {
+    body.custom_skill = inputs.customSkill;
+  }
+
+  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
+    body,
   });
 
   return {

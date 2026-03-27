@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as yaml from 'js-yaml';
 
 export interface ActionInputs {
   apiKey: string;
@@ -15,6 +16,7 @@ export interface ActionInputs {
   pipPackage?: string;
   pipIndexUrl?: string;
   setupCommands?: string[];
+  customSkill?: Record<string, unknown>;
   isPublic: boolean;
   apiUrl: string;
   objectTtlDays?: number;
@@ -27,6 +29,7 @@ export function getInputs(): ActionInputs {
   // Get all inputs
   const sourceType = core.getInput('source-type', { required: true }) as SourceType;
   const setupCommandsRaw = core.getInput('setup-commands');
+  const customSkillRaw = core.getInput('custom-skill');
   const isPublicRaw = core.getInput('is-public') || 'false';
   const objectTtlDaysRaw = core.getInput('object-ttl-days');
 
@@ -48,6 +51,7 @@ export function getInputs(): ActionInputs {
           .map(cmd => cmd.trim())
           .filter(cmd => cmd.length > 0)
       : undefined,
+    customSkill: customSkillRaw ? yaml.load(customSkillRaw) as Record<string, unknown> : undefined,
     isPublic: isPublicRaw === 'true',
     apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
     objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,

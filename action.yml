@@ -56,6 +56,11 @@ inputs:
     description: 'Path to file or tar archive (required if source-type=tar/file)'
     required: false
 
+  # Custom skill inputs
+  custom-skill:
+    description: 'YAML-encoded custom skill definition to attach to the agent'
+    required: false
+
   # Common inputs
   setup-commands:
     description: 'Newline-separated setup commands to run after agent installation'
