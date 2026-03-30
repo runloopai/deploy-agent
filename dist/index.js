@@ -40844,6 +40844,19 @@ async function deployAgent(inputs) {
     return result;
 }
 /**
+ * Build optional fields (custom_skills, webhooks) shared across all deploy functions.
+ */
+function buildOptionalFields(inputs) {
+    const fields = {};
+    if (inputs.skills && inputs.skills.length > 0) {
+        fields.custom_skills = inputs.skills;
+    }
+    if (inputs.webhooks) {
+        fields.webhooks = inputs.webhooks;
+    }
+    return fields;
+}
+/**
  * Deploy an agent from a Git repository.
  */
 async function deployGitAgent(client, agentName, inputs) {
@@ -40858,6 +40871,7 @@ async function deployGitAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'git',
                 git: {
@@ -40866,6 +40880,7 @@ async function deployGitAgent(client, agentName, inputs) {
                     agent_setup: inputs.setupCommands || [],
                 },
             },
+            ...buildOptionalFields(inputs),
         },
     });
     return {
@@ -40891,6 +40906,7 @@ async function deployTarAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'object',
                 object: {
@@ -40898,6 +40914,7 @@ async function deployTarAgent(client, agentName, inputs) {
                     agent_setup: inputs.setupCommands || [],
                 },
             },
+            ...buildOptionalFields(inputs),
         },
     });
     return {
@@ -40924,6 +40941,7 @@ async function deployFileAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'object',
                 object: {
@@ -40931,6 +40949,7 @@ async function deployFileAgent(client, agentName, inputs) {
                     agent_setup: inputs.setupCommands || [],
                 },
             },
+            ...buildOptionalFields(inputs),
         },
     });
     return {
@@ -40960,14 +40979,13 @@ async function deployNpmAgent(client, agentName, inputs) {
         name: agentName,
         version: inputs.agentVersion,
         is_public: inputs.isPublic,
+        ...(inputs.architecture && { architecture: inputs.architecture }),
         source: {
             type: 'npm',
             npm: npmSource,
         },
+        ...buildOptionalFields(inputs),
     };
-    if (inputs.customSkill) {
-        body.custom_skill = inputs.customSkill;
-    }
     const agent = await client.api.post('/v1/agents', {
         body,
     });
@@ -40998,10 +41016,12 @@ async function deployPipAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'pip',
                 pip: pipSource,
             },
+            ...buildOptionalFields(inputs),
         },
     });
     return {
@@ -41217,6 +41237,9 @@ async function run() {
         core.setOutput('agent-name', result.agentName);
         if (result.objectId) {
             core.setOutput('object-id', result.objectId);
+        }
+        if (inputs.architecture) {
+            core.setOutput('architecture', inputs.architecture);
         }
         core.info('');
         core.info('✅ Deployment completed successfully!');
@@ -41493,7 +41516,8 @@ function getInputs() {
     // Get all inputs
     const sourceType = core.getInput('source-type', { required: true });
     const setupCommandsRaw = core.getInput('setup-commands');
-    const customSkillRaw = core.getInput('custom-skill');
+    const skillsRaw = core.getInput('skills');
+    const webhooksRaw = core.getInput('webhooks');
     const isPublicRaw = core.getInput('is-public') || 'false';
     const objectTtlDaysRaw = core.getInput('object-ttl-days');
     const inputs = {
@@ -41514,10 +41538,14 @@ function getInputs() {
                 .map(cmd => cmd.trim())
                 .filter(cmd => cmd.length > 0)
             : undefined,
-        customSkill: customSkillRaw ? yaml.load(customSkillRaw) : undefined,
+        skills: skillsRaw ? yaml.load(skillsRaw) : undefined,
+        webhooks: webhooksRaw
+            ? yaml.load(webhooksRaw)
+            : undefined,
         isPublic: isPublicRaw === 'true',
         apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
         objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
+        architecture: core.getInput('architecture') || undefined,
     };
     return inputs;
 }
@@ -41562,6 +41590,13 @@ function validateInputs(inputs) {
     }
     // Validate agentVersion format (semver or SHA)
     validateAgentVersion(inputs.agentVersion);
+    // Validate architecture if provided
+    if (inputs.architecture) {
+        const validArchitectures = ['x86_64', 'arm64'];
+        if (!validArchitectures.includes(inputs.architecture)) {
+            throw new Error(`Invalid architecture: ${inputs.architecture}. Must be one of: ${validArchitectures.join(', ')}`);
+        }
+    }
     // Validate objectTtlDays if provided
     if (inputs.objectTtlDays !== undefined) {
         if (isNaN(inputs.objectTtlDays) || inputs.objectTtlDays <= 0) {

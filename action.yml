@@ -56,9 +56,14 @@ inputs:
     description: 'Path to file or tar archive (required if source-type=tar/file)'
     required: false
 
-  # Custom skill inputs
-  custom-skill:
-    description: 'YAML-encoded custom skill definition to attach to the agent'
+  # Skills inputs
+  skills:
+    description: 'YAML-encoded list of custom skill definitions to attach to the agent'
+    required: false
+
+  # Webhook inputs
+  webhooks:
+    description: 'YAML-encoded list of webhook configurations (url, events, secret)'
     required: false
 
   # Common inputs
