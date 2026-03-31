@@ -72,6 +72,20 @@ export async function deployAgent(inputs: ActionInputs): Promise<DeploymentResul
 }
 
 /**
+ * Build optional fields (custom_skills, webhooks) shared across all deploy functions.
+ */
+function buildOptionalFields(inputs: ActionInputs): Record<string, unknown> {
+  const fields: Record<string, unknown> = {};
+  if (inputs.skills && inputs.skills.length > 0) {
+    fields.custom_skills = inputs.skills;
+  }
+  if (inputs.webhooks) {
+    fields.webhooks = inputs.webhooks;
+  }
+  return fields;
+}
+
+/**
  * Deploy an agent from a Git repository.
  */
 async function deployGitAgent(
@@ -101,6 +115,7 @@ async function deployGitAgent(
           agent_setup: inputs.setupCommands || [],
         },
       },
+      ...buildOptionalFields(inputs),
     },
   });
 
@@ -144,6 +159,7 @@ async function deployTarAgent(
           agent_setup: inputs.setupCommands || [],
         },
       },
+      ...buildOptionalFields(inputs),
     },
   });
 
@@ -188,6 +204,7 @@ async function deployFileAgent(
           agent_setup: inputs.setupCommands || [],
         },
       },
+      ...buildOptionalFields(inputs),
     },
   });
 
@@ -222,17 +239,20 @@ async function deployNpmAgent(
     npmSource.agent_setup = inputs.setupCommands;
   }
 
-  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
-    body: {
-      name: agentName,
-      version: inputs.agentVersion,
-      is_public: inputs.isPublic,
-      ...(inputs.architecture && { architecture: inputs.architecture }),
-      source: {
-        type: 'npm',
-        npm: npmSource,
-      },
+  const body: Record<string, unknown> = {
+    name: agentName,
+    version: inputs.agentVersion,
+    is_public: inputs.isPublic,
+    ...(inputs.architecture && { architecture: inputs.architecture }),
+    source: {
+      type: 'npm',
+      npm: npmSource,
     },
+    ...buildOptionalFields(inputs),
+  };
+
+  const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
+    body,
   });
 
   return {
@@ -275,6 +295,7 @@ async function deployPipAgent(
         type: 'pip',
         pip: pipSource,
       },
+      ...buildOptionalFields(inputs),
     },
   });
 

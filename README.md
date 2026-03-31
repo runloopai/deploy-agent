@@ -6,9 +6,10 @@ A GitHub Action to deploy agents to the [Runloop](https://runloop.ai) platform. 
 
 - **Zero-config Git deployments** - Automatically deploys your current repository
 - **Release tag support** - Deploys specific versions when releases are published
-- **Multiple source types** - Git repositories, tar archives (.tar, .tar.gz, .tgz), and single files
+- **Multiple source types** - Git repositories, tar archives, single files, NPM packages, and PyPI packages
 - **Flexible packaging** - Create tar archives however you want in your workflow
 - **Setup commands** - Run custom setup commands after agent installation
+- **Custom skills** - Attach custom skill definitions (YAML or JSON) to agents
 - **Public/private agents** - Control agent visibility
 - **TTL support** - Set expiration time for uploaded objects
 
@@ -34,12 +35,17 @@ That's it! The action will automatically use your current repository and commit 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `api-key` | ✅ | | Runloop API key (store in secrets) |
-| `source-type` | ✅ | | Agent source type: `git`, `tar`, or `file` |
+| `source-type` | ✅ | | Agent source type: `git`, `tar`, `file`, `npm`, or `pip` |
 | `agent-version` | ✅ | | Agent version (semver string like `2.0.65` or git SHA) |
 | `agent-name` | | repo name | Name for the agent (defaults to repository name) |
 | `git-repository` | | current repo | Git repository URL (auto-detected) |
 | `git-ref` | | current commit/tag | Git ref (branch/tag/commit SHA, auto-detected) |
+| `npm-package` | | | NPM package name (required for `npm`, e.g., `@anthropic-ai/claude-code`) |
+| `npm-registry-url` | | | NPM registry URL (defaults to public npm registry) |
+| `pip-package` | | | PyPI package name (required for `pip`, e.g., `deepagents-cli`) |
+| `pip-index-url` | | | PyPI index URL (defaults to public PyPI) |
 | `path` | | | Path to tar archive or single file (required for `tar`/`file`) |
+| `custom-skill` | | | Custom skill definition in YAML (or JSON) to attach to the agent |
 | `setup-commands` | | | Newline-separated setup commands to run after installation |
 | `is-public` | | `false` | Whether the agent should be publicly accessible |
 | `api-url` | | `https://api.runloop.ai` | Runloop API URL |
@@ -141,6 +147,47 @@ You can also use `.tar` format or reference output from a previous step:
     source-type: file
     agent-version: 1.0.0
     path: ./scripts/agent.sh
+```
+
+### NPM Package
+
+```yaml
+- uses: runloopai/deploy-agent@main
+  with:
+    api-key: ${{ secrets.RUNLOOP_API_KEY }}
+    source-type: npm
+    agent-version: 1.0.0
+    npm-package: "@anthropic-ai/claude-code"
+```
+
+### NPM Package with Custom Skill
+
+The `custom-skill` input accepts a YAML (or JSON) definition:
+
+```yaml
+- uses: runloopai/deploy-agent@main
+  with:
+    api-key: ${{ secrets.RUNLOOP_API_KEY }}
+    source-type: npm
+    agent-version: 1.0.0
+    npm-package: "@anthropic-ai/claude-code"
+    custom-skill: |
+      name: my-skill
+      description: A custom skill for the agent
+      instructions: >-
+        Detailed instructions for how the agent
+        should use this skill.
+```
+
+### PyPI Package
+
+```yaml
+- uses: runloopai/deploy-agent@main
+  with:
+    api-key: ${{ secrets.RUNLOOP_API_KEY }}
+    source-type: pip
+    agent-version: 1.0.0
+    pip-package: deepagents-cli
 ```
 
 ## Authentication

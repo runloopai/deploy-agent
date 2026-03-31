@@ -20,10 +20,16 @@ importers:
       ignore:
         specifier: ^7.0.5
         version: 7.0.5
+      js-yaml:
+        specifier: ^4.1.1
+        version: 4.1.1
       tar-stream:
         specifier: ^3.1.7
         version: 3.1.7
     devDependencies:
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/node':
         specifier: ^20.19.26
         version: 20.19.26
@@ -180,6 +186,9 @@ packages:
 
   '@runloop/api-client@1.0.0':
     resolution: {integrity: sha512-+vpPKRmTO6UdTF4ymz7J15pImwjrE1/bKBjJK3Lkgp6YALwu2UtYR22P/vxK5eOLTmAmdBv/7s1X25G1W/WeAg==}
+
+  '@types/js-yaml@4.0.9':
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
   '@types/node-fetch@2.6.13':
     resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
@@ -1050,6 +1059,8 @@ snapshots:
       zod: 3.25.76
     transitivePeerDependencies:
       - encoding
+
+  '@types/js-yaml@4.0.9': {}
 
   '@types/node-fetch@2.6.13':
     dependencies:

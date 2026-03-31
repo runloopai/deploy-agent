@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as yaml from 'js-yaml';
 
 export interface ActionInputs {
   apiKey: string;
@@ -15,6 +16,8 @@ export interface ActionInputs {
   pipPackage?: string;
   pipIndexUrl?: string;
   setupCommands?: string[];
+  skills?: Array<Record<string, unknown>>;
+  webhooks?: Array<{ url: string; events?: string[]; secret?: string }>;
   isPublic: boolean;
   apiUrl: string;
   objectTtlDays?: number;
@@ -27,6 +30,8 @@ export function getInputs(): ActionInputs {
   // Get all inputs
   const sourceType = core.getInput('source-type', { required: true }) as SourceType;
   const setupCommandsRaw = core.getInput('setup-commands');
+  const skillsRaw = core.getInput('skills');
+  const webhooksRaw = core.getInput('webhooks');
   const isPublicRaw = core.getInput('is-public') || 'false';
   const objectTtlDaysRaw = core.getInput('object-ttl-days');
 
@@ -47,6 +52,10 @@ export function getInputs(): ActionInputs {
           .split('\n')
           .map(cmd => cmd.trim())
           .filter(cmd => cmd.length > 0)
+      : undefined,
+    skills: skillsRaw ? yaml.load(skillsRaw) as Array<Record<string, unknown>> : undefined,
+    webhooks: webhooksRaw
+      ? yaml.load(webhooksRaw) as Array<{ url: string; events?: string[]; secret?: string }>
       : undefined,
     isPublic: isPublicRaw === 'true',
     apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
