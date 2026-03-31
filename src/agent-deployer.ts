@@ -92,6 +92,7 @@ async function deployGitAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
+      ...(inputs.architecture && { architecture: inputs.architecture }),
       source: {
         type: 'git',
         git: {
@@ -135,6 +136,7 @@ async function deployTarAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
+      ...(inputs.architecture && { architecture: inputs.architecture }),
       source: {
         type: 'object',
         object: {
@@ -178,6 +180,7 @@ async function deployFileAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
+      ...(inputs.architecture && { architecture: inputs.architecture }),
       source: {
         type: 'object',
         object: {
@@ -224,6 +227,7 @@ async function deployNpmAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
+      ...(inputs.architecture && { architecture: inputs.architecture }),
       source: {
         type: 'npm',
         npm: npmSource,
@@ -266,6 +270,7 @@ async function deployPipAgent(
       name: agentName,
       version: inputs.agentVersion,
       is_public: inputs.isPublic,
+      ...(inputs.architecture && { architecture: inputs.architecture }),
       source: {
         type: 'pip',
         pip: pipSource,

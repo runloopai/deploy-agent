@@ -76,6 +76,10 @@ inputs:
     required: false
     # default is 'undefined' => don't auto-delete
 
+  architecture:
+    description: 'Target architecture for the agent (x86_64 or arm64). If unset, agent is universal.'
+    required: false
+
 outputs:
   agent-id:
     description: 'The ID of the created agent (e.g., agt_xxxx)'
@@ -85,6 +89,9 @@ outputs:
 
   agent-name:
     description: 'The final name of the created agent'
+
+  architecture:
+    description: 'The architecture of the created agent (if specified)'
 
 runs:
   using: 'node20'

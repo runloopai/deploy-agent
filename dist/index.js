@@ -36744,6 +36744,7 @@ async function deployGitAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'git',
                 git: {
@@ -36777,6 +36778,7 @@ async function deployTarAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'object',
                 object: {
@@ -36810,6 +36812,7 @@ async function deployFileAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'object',
                 object: {
@@ -36847,6 +36850,7 @@ async function deployNpmAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'npm',
                 npm: npmSource,
@@ -36880,6 +36884,7 @@ async function deployPipAgent(client, agentName, inputs) {
             name: agentName,
             version: inputs.agentVersion,
             is_public: inputs.isPublic,
+            ...(inputs.architecture && { architecture: inputs.architecture }),
             source: {
                 type: 'pip',
                 pip: pipSource,
@@ -37099,6 +37104,9 @@ async function run() {
         core.setOutput('agent-name', result.agentName);
         if (result.objectId) {
             core.setOutput('object-id', result.objectId);
+        }
+        if (inputs.architecture) {
+            core.setOutput('architecture', inputs.architecture);
         }
         core.info('');
         core.info('✅ Deployment completed successfully!');
@@ -37397,6 +37405,7 @@ function getInputs() {
         isPublic: isPublicRaw === 'true',
         apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
         objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
+        architecture: core.getInput('architecture') || undefined,
     };
     return inputs;
 }
@@ -37441,6 +37450,13 @@ function validateInputs(inputs) {
     }
     // Validate agentVersion format (semver or SHA)
     validateAgentVersion(inputs.agentVersion);
+    // Validate architecture if provided
+    if (inputs.architecture) {
+        const validArchitectures = ['x86_64', 'arm64'];
+        if (!validArchitectures.includes(inputs.architecture)) {
+            throw new Error(`Invalid architecture: ${inputs.architecture}. Must be one of: ${validArchitectures.join(', ')}`);
+        }
+    }
     // Validate objectTtlDays if provided
     if (inputs.objectTtlDays !== undefined) {
         if (isNaN(inputs.objectTtlDays) || inputs.objectTtlDays <= 0) {

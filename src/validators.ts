@@ -18,6 +18,7 @@ export interface ActionInputs {
   isPublic: boolean;
   apiUrl: string;
   objectTtlDays?: number;
+  architecture?: string;
 }
 
 export type SourceType = 'git' | 'tar' | 'file' | 'npm' | 'pip';
@@ -50,6 +51,7 @@ export function getInputs(): ActionInputs {
     isPublic: isPublicRaw === 'true',
     apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
     objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
+    architecture: core.getInput('architecture') || undefined,
   };
 
   return inputs;
@@ -105,6 +107,16 @@ export function validateInputs(inputs: ActionInputs): void {
 
   // Validate agentVersion format (semver or SHA)
   validateAgentVersion(inputs.agentVersion);
+
+  // Validate architecture if provided
+  if (inputs.architecture) {
+    const validArchitectures = ['x86_64', 'arm64'];
+    if (!validArchitectures.includes(inputs.architecture)) {
+      throw new Error(
+        `Invalid architecture: ${inputs.architecture}. Must be one of: ${validArchitectures.join(', ')}`
+      );
+    }
+  }
 
   // Validate objectTtlDays if provided
   if (inputs.objectTtlDays !== undefined) {

@@ -41,6 +41,9 @@ async function run(): Promise<void> {
     if (result.objectId) {
       core.setOutput('object-id', result.objectId);
     }
+    if (inputs.architecture) {
+      core.setOutput('architecture', inputs.architecture);
+    }
 
     core.info('');
     core.info('✅ Deployment completed successfully!');
