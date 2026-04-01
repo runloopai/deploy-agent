@@ -198,7 +198,7 @@ async function deployFileAgent(
   // Upload universal object if path provided
   if (inputs.path) {
     const filePath = resolvePath(inputs.path);
-    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays, 'binary');
     objectSource.object_id = result.objectId;
     firstObjectId = result.objectId;
     core.info(`Universal object uploaded: ${result.objectId}`);
@@ -207,7 +207,7 @@ async function deployFileAgent(
   // Upload x86_64 object if path provided
   if (inputs.x86_64Path) {
     const filePath = resolvePath(inputs.x86_64Path);
-    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays, 'binary');
     objectSource.x86_64_object_id = result.objectId;
     firstObjectId = firstObjectId || result.objectId;
     core.info(`x86_64 object uploaded: ${result.objectId}`);
@@ -216,7 +216,7 @@ async function deployFileAgent(
   // Upload arm64 object if path provided
   if (inputs.arm64Path) {
     const filePath = resolvePath(inputs.arm64Path);
-    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays, 'binary');
     objectSource.arm64_object_id = result.objectId;
     firstObjectId = firstObjectId || result.objectId;
     core.info(`arm64 object uploaded: ${result.objectId}`);

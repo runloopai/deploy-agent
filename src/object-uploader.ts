@@ -42,15 +42,15 @@ export async function uploadTarFile(
 export async function uploadSingleFile(
   client: RunloopSDK,
   filePath: string,
-  ttlDays?: number
+  ttlDays?: number,
+  contentTypeOverride?: 'text' | 'binary' | 'gzip' | 'tar' | 'tgz'
 ): Promise<UploadResult> {
   core.info(`Uploading single file: ${filePath}`);
 
   const fileBuffer = fs.readFileSync(filePath);
   const fileName = path.basename(filePath);
 
-  // Determine content type based on file
-  const contentType = determineContentType(fileName, fileBuffer);
+  const contentType = contentTypeOverride ?? determineContentType(fileName, fileBuffer);
 
   return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays);
 }

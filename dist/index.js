@@ -36826,7 +36826,7 @@ async function deployFileAgent(client, agentName, inputs) {
     // Upload universal object if path provided
     if (inputs.path) {
         const filePath = (0, validators_1.resolvePath)(inputs.path);
-        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays);
+        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, 'binary');
         objectSource.object_id = result.objectId;
         firstObjectId = result.objectId;
         core.info(`Universal object uploaded: ${result.objectId}`);
@@ -36834,7 +36834,7 @@ async function deployFileAgent(client, agentName, inputs) {
     // Upload x86_64 object if path provided
     if (inputs.x86_64Path) {
         const filePath = (0, validators_1.resolvePath)(inputs.x86_64Path);
-        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays);
+        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, 'binary');
         objectSource.x86_64_object_id = result.objectId;
         firstObjectId = firstObjectId || result.objectId;
         core.info(`x86_64 object uploaded: ${result.objectId}`);
@@ -36842,7 +36842,7 @@ async function deployFileAgent(client, agentName, inputs) {
     // Upload arm64 object if path provided
     if (inputs.arm64Path) {
         const filePath = (0, validators_1.resolvePath)(inputs.arm64Path);
-        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays);
+        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, 'binary');
         objectSource.arm64_object_id = result.objectId;
         firstObjectId = firstObjectId || result.objectId;
         core.info(`arm64 object uploaded: ${result.objectId}`);
@@ -37263,12 +37263,11 @@ async function uploadTarFile(client, filePath, ttlDays) {
 /**
  * Upload a single file (text or binary).
  */
-async function uploadSingleFile(client, filePath, ttlDays) {
+async function uploadSingleFile(client, filePath, ttlDays, contentTypeOverride) {
     core.info(`Uploading single file: ${filePath}`);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
-    // Determine content type based on file
-    const contentType = determineContentType(fileName, fileBuffer);
+    const contentType = contentTypeOverride ?? determineContentType(fileName, fileBuffer);
     return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays);
 }
 /**
