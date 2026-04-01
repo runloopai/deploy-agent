@@ -56,6 +56,14 @@ inputs:
     description: 'Path to file or tar archive (required if source-type=tar/file)'
     required: false
 
+  x86-64-path:
+    description: 'Path to tar archive for x86_64 architecture (optional, used with source-type=tar)'
+    required: false
+
+  arm64-path:
+    description: 'Path to tar archive for arm64 architecture (optional, used with source-type=tar)'
+    required: false
+
   # Common inputs
   setup-commands:
     description: 'Newline-separated setup commands to run after agent installation'
@@ -82,6 +90,12 @@ outputs:
 
   object-id:
     description: 'The ID of the uploaded object (if applicable, e.g., obj_xxxx)'
+
+  x86-64-object-id:
+    description: 'The ID of the uploaded x86_64 object (if applicable)'
+
+  arm64-object-id:
+    description: 'The ID of the uploaded arm64 object (if applicable)'
 
   agent-name:
     description: 'The final name of the created agent'

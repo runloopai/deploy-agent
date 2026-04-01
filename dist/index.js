@@ -36764,12 +36764,37 @@ async function deployGitAgent(client, agentName, inputs) {
  */
 async function deployTarAgent(client, agentName, inputs) {
     core.info('Deploying tar agent...');
-    if (!inputs.path) {
-        throw new Error('path is required for tar agent deployment');
+    const objectSource = {
+        agent_setup: inputs.setupCommands || [],
+    };
+    let firstObjectId;
+    // Upload universal object if path provided
+    if (inputs.path) {
+        const tarPath = (0, validators_1.resolvePath)(inputs.path);
+        const result = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays);
+        objectSource.object_id = result.objectId;
+        firstObjectId = result.objectId;
+        core.info(`Universal object uploaded: ${result.objectId}`);
     }
-    const tarPath = (0, validators_1.resolvePath)(inputs.path);
-    // Upload tar file
-    const uploadResult = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays);
+    // Upload x86_64 object if path provided
+    if (inputs.x86_64Path) {
+        const tarPath = (0, validators_1.resolvePath)(inputs.x86_64Path);
+        const result = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays);
+        objectSource.x86_64_object_id = result.objectId;
+        firstObjectId = firstObjectId || result.objectId;
+        core.info(`x86_64 object uploaded: ${result.objectId}`);
+    }
+    // Upload arm64 object if path provided
+    if (inputs.arm64Path) {
+        const tarPath = (0, validators_1.resolvePath)(inputs.arm64Path);
+        const result = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays);
+        objectSource.arm64_object_id = result.objectId;
+        firstObjectId = firstObjectId || result.objectId;
+        core.info(`arm64 object uploaded: ${result.objectId}`);
+    }
+    if (!firstObjectId) {
+        throw new Error('At least one of path, x86-64-path, or arm64-path is required for tar deployment');
+    }
     // Create agent with object source
     // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
     const agent = await client.api.post('/v1/agents', {
@@ -36779,17 +36804,14 @@ async function deployTarAgent(client, agentName, inputs) {
             is_public: inputs.isPublic,
             source: {
                 type: 'object',
-                object: {
-                    object_id: uploadResult.objectId,
-                    agent_setup: inputs.setupCommands || [],
-                },
+                object: objectSource,
             },
         },
     });
     return {
         agentId: agent.id,
         agentName: agent.name,
-        objectId: uploadResult.objectId,
+        objectId: firstObjectId,
     };
 }
 /**
@@ -36797,12 +36819,37 @@ async function deployTarAgent(client, agentName, inputs) {
  */
 async function deployFileAgent(client, agentName, inputs) {
     core.info('Deploying file agent...');
-    if (!inputs.path) {
-        throw new Error('path is required for file agent deployment');
+    const objectSource = {
+        agent_setup: inputs.setupCommands || [],
+    };
+    let firstObjectId;
+    // Upload universal object if path provided
+    if (inputs.path) {
+        const filePath = (0, validators_1.resolvePath)(inputs.path);
+        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, 'binary');
+        objectSource.object_id = result.objectId;
+        firstObjectId = result.objectId;
+        core.info(`Universal object uploaded: ${result.objectId}`);
     }
-    const filePath = (0, validators_1.resolvePath)(inputs.path);
-    // Upload single file
-    const uploadResult = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays);
+    // Upload x86_64 object if path provided
+    if (inputs.x86_64Path) {
+        const filePath = (0, validators_1.resolvePath)(inputs.x86_64Path);
+        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, 'binary');
+        objectSource.x86_64_object_id = result.objectId;
+        firstObjectId = firstObjectId || result.objectId;
+        core.info(`x86_64 object uploaded: ${result.objectId}`);
+    }
+    // Upload arm64 object if path provided
+    if (inputs.arm64Path) {
+        const filePath = (0, validators_1.resolvePath)(inputs.arm64Path);
+        const result = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, 'binary');
+        objectSource.arm64_object_id = result.objectId;
+        firstObjectId = firstObjectId || result.objectId;
+        core.info(`arm64 object uploaded: ${result.objectId}`);
+    }
+    if (!firstObjectId) {
+        throw new Error('At least one of path, x86-64-path, or arm64-path is required for file deployment');
+    }
     // Create agent with object source
     // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
     const agent = await client.api.post('/v1/agents', {
@@ -36812,17 +36859,14 @@ async function deployFileAgent(client, agentName, inputs) {
             is_public: inputs.isPublic,
             source: {
                 type: 'object',
-                object: {
-                    object_id: uploadResult.objectId,
-                    agent_setup: inputs.setupCommands || [],
-                },
+                object: objectSource,
             },
         },
     });
     return {
         agentId: agent.id,
         agentName: agent.name,
-        objectId: uploadResult.objectId,
+        objectId: firstObjectId,
     };
 }
 /**
@@ -37219,12 +37263,11 @@ async function uploadTarFile(client, filePath, ttlDays) {
 /**
  * Upload a single file (text or binary).
  */
-async function uploadSingleFile(client, filePath, ttlDays) {
+async function uploadSingleFile(client, filePath, ttlDays, contentTypeOverride) {
     core.info(`Uploading single file: ${filePath}`);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
-    // Determine content type based on file
-    const contentType = determineContentType(fileName, fileBuffer);
+    const contentType = contentTypeOverride ?? determineContentType(fileName, fileBuffer);
     return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays);
 }
 /**
@@ -37384,6 +37427,8 @@ function getInputs() {
         gitRepository: core.getInput('git-repository') || undefined,
         gitRef: core.getInput('git-ref') || undefined,
         path: core.getInput('path') || undefined,
+        x86_64Path: core.getInput('x86-64-path') || undefined,
+        arm64Path: core.getInput('arm64-path') || undefined,
         npmPackage: core.getInput('npm-package') || undefined,
         npmRegistryUrl: core.getInput('npm-registry-url') || undefined,
         pipPackage: core.getInput('pip-package') || undefined,
@@ -37409,11 +37454,33 @@ function validateInputs(inputs) {
     // Validate source-specific inputs
     switch (inputs.sourceType) {
         case 'tar':
-        case 'file':
-            if (!inputs.path) {
-                throw new Error(`path is required when source-type is "${inputs.sourceType}"`);
+            // For tar, at least one of path, x86-64-path, or arm64-path must be provided
+            if (!inputs.path && !inputs.x86_64Path && !inputs.arm64Path) {
+                throw new Error('At least one of path, x86-64-path, or arm64-path is required when source-type is "tar"');
             }
-            validatePath(inputs.path, inputs.sourceType);
+            if (inputs.path) {
+                validatePath(inputs.path, inputs.sourceType);
+            }
+            if (inputs.x86_64Path) {
+                validatePath(inputs.x86_64Path, inputs.sourceType);
+            }
+            if (inputs.arm64Path) {
+                validatePath(inputs.arm64Path, inputs.sourceType);
+            }
+            break;
+        case 'file':
+            if (!inputs.path && !inputs.x86_64Path && !inputs.arm64Path) {
+                throw new Error('At least one of path, x86-64-path, or arm64-path is required when source-type is "file"');
+            }
+            if (inputs.path) {
+                validatePath(inputs.path, inputs.sourceType);
+            }
+            if (inputs.x86_64Path) {
+                validatePath(inputs.x86_64Path, inputs.sourceType);
+            }
+            if (inputs.arm64Path) {
+                validatePath(inputs.arm64Path, inputs.sourceType);
+            }
             break;
         case 'git':
             // Git source doesn't require explicit repository (uses current repo by default)

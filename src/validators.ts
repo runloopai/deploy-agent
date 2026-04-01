@@ -10,6 +10,8 @@ export interface ActionInputs {
   gitRepository?: string;
   gitRef?: string;
   path?: string;
+  x86_64Path?: string;
+  arm64Path?: string;
   npmPackage?: string;
   npmRegistryUrl?: string;
   pipPackage?: string;
@@ -37,6 +39,8 @@ export function getInputs(): ActionInputs {
     gitRepository: core.getInput('git-repository') || undefined,
     gitRef: core.getInput('git-ref') || undefined,
     path: core.getInput('path') || undefined,
+    x86_64Path: core.getInput('x86-64-path') || undefined,
+    arm64Path: core.getInput('arm64-path') || undefined,
     npmPackage: core.getInput('npm-package') || undefined,
     npmRegistryUrl: core.getInput('npm-registry-url') || undefined,
     pipPackage: core.getInput('pip-package') || undefined,
@@ -67,11 +71,38 @@ export function validateInputs(inputs: ActionInputs): void {
   // Validate source-specific inputs
   switch (inputs.sourceType) {
     case 'tar':
-    case 'file':
-      if (!inputs.path) {
-        throw new Error(`path is required when source-type is "${inputs.sourceType}"`);
+      // For tar, at least one of path, x86-64-path, or arm64-path must be provided
+      if (!inputs.path && !inputs.x86_64Path && !inputs.arm64Path) {
+        throw new Error(
+          'At least one of path, x86-64-path, or arm64-path is required when source-type is "tar"'
+        );
       }
-      validatePath(inputs.path, inputs.sourceType);
+      if (inputs.path) {
+        validatePath(inputs.path, inputs.sourceType);
+      }
+      if (inputs.x86_64Path) {
+        validatePath(inputs.x86_64Path, inputs.sourceType);
+      }
+      if (inputs.arm64Path) {
+        validatePath(inputs.arm64Path, inputs.sourceType);
+      }
+      break;
+
+    case 'file':
+      if (!inputs.path && !inputs.x86_64Path && !inputs.arm64Path) {
+        throw new Error(
+          'At least one of path, x86-64-path, or arm64-path is required when source-type is "file"'
+        );
+      }
+      if (inputs.path) {
+        validatePath(inputs.path, inputs.sourceType);
+      }
+      if (inputs.x86_64Path) {
+        validatePath(inputs.x86_64Path, inputs.sourceType);
+      }
+      if (inputs.arm64Path) {
+        validatePath(inputs.arm64Path, inputs.sourceType);
+      }
       break;
 
     case 'git':
