@@ -189,14 +189,44 @@ async function deployFileAgent(
 ): Promise<DeploymentResult> {
   core.info('Deploying file agent...');
 
-  if (!inputs.path) {
-    throw new Error('path is required for file agent deployment');
+  const objectSource: Record<string, unknown> = {
+    agent_setup: inputs.setupCommands || [],
+  };
+
+  let firstObjectId: string | undefined;
+
+  // Upload universal object if path provided
+  if (inputs.path) {
+    const filePath = resolvePath(inputs.path);
+    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+    objectSource.object_id = result.objectId;
+    firstObjectId = result.objectId;
+    core.info(`Universal object uploaded: ${result.objectId}`);
   }
 
-  const filePath = resolvePath(inputs.path);
+  // Upload x86_64 object if path provided
+  if (inputs.x86_64Path) {
+    const filePath = resolvePath(inputs.x86_64Path);
+    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+    objectSource.x86_64_object_id = result.objectId;
+    firstObjectId = firstObjectId || result.objectId;
+    core.info(`x86_64 object uploaded: ${result.objectId}`);
+  }
 
-  // Upload single file
-  const uploadResult = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+  // Upload arm64 object if path provided
+  if (inputs.arm64Path) {
+    const filePath = resolvePath(inputs.arm64Path);
+    const result = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+    objectSource.arm64_object_id = result.objectId;
+    firstObjectId = firstObjectId || result.objectId;
+    core.info(`arm64 object uploaded: ${result.objectId}`);
+  }
+
+  if (!firstObjectId) {
+    throw new Error(
+      'At least one of path, x86-64-path, or arm64-path is required for file deployment'
+    );
+  }
 
   // Create agent with object source
   // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
@@ -207,10 +237,7 @@ async function deployFileAgent(
       is_public: inputs.isPublic,
       source: {
         type: 'object',
-        object: {
-          object_id: uploadResult.objectId,
-          agent_setup: inputs.setupCommands || [],
-        },
+        object: objectSource,
       },
     },
   });
@@ -218,7 +245,7 @@ async function deployFileAgent(
   return {
     agentId: agent.id,
     agentName: agent.name,
-    objectId: uploadResult.objectId,
+    objectId: firstObjectId,
   };
 }
 

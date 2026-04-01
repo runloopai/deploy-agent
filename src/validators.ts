@@ -89,10 +89,20 @@ export function validateInputs(inputs: ActionInputs): void {
       break;
 
     case 'file':
-      if (!inputs.path) {
-        throw new Error(`path is required when source-type is "${inputs.sourceType}"`);
+      if (!inputs.path && !inputs.x86_64Path && !inputs.arm64Path) {
+        throw new Error(
+          'At least one of path, x86-64-path, or arm64-path is required when source-type is "file"'
+        );
       }
-      validatePath(inputs.path, inputs.sourceType);
+      if (inputs.path) {
+        validatePath(inputs.path, inputs.sourceType);
+      }
+      if (inputs.x86_64Path) {
+        validatePath(inputs.x86_64Path, inputs.sourceType);
+      }
+      if (inputs.arm64Path) {
+        validatePath(inputs.arm64Path, inputs.sourceType);
+      }
       break;
 
     case 'git':
