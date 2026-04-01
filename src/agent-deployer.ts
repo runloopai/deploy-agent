@@ -119,14 +119,44 @@ async function deployTarAgent(
 ): Promise<DeploymentResult> {
   core.info('Deploying tar agent...');
 
-  if (!inputs.path) {
-    throw new Error('path is required for tar agent deployment');
+  const objectSource: Record<string, unknown> = {
+    agent_setup: inputs.setupCommands || [],
+  };
+
+  let firstObjectId: string | undefined;
+
+  // Upload universal object if path provided
+  if (inputs.path) {
+    const tarPath = resolvePath(inputs.path);
+    const result = await uploadTarFile(client, tarPath, inputs.objectTtlDays);
+    objectSource.object_id = result.objectId;
+    firstObjectId = result.objectId;
+    core.info(`Universal object uploaded: ${result.objectId}`);
   }
 
-  const tarPath = resolvePath(inputs.path);
+  // Upload x86_64 object if path provided
+  if (inputs.x86_64Path) {
+    const tarPath = resolvePath(inputs.x86_64Path);
+    const result = await uploadTarFile(client, tarPath, inputs.objectTtlDays);
+    objectSource.x86_64_object_id = result.objectId;
+    firstObjectId = firstObjectId || result.objectId;
+    core.info(`x86_64 object uploaded: ${result.objectId}`);
+  }
 
-  // Upload tar file
-  const uploadResult = await uploadTarFile(client, tarPath, inputs.objectTtlDays);
+  // Upload arm64 object if path provided
+  if (inputs.arm64Path) {
+    const tarPath = resolvePath(inputs.arm64Path);
+    const result = await uploadTarFile(client, tarPath, inputs.objectTtlDays);
+    objectSource.arm64_object_id = result.objectId;
+    firstObjectId = firstObjectId || result.objectId;
+    core.info(`arm64 object uploaded: ${result.objectId}`);
+  }
+
+  if (!firstObjectId) {
+    throw new Error(
+      'At least one of path, x86-64-path, or arm64-path is required for tar deployment'
+    );
+  }
 
   // Create agent with object source
   // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
@@ -137,10 +167,7 @@ async function deployTarAgent(
       is_public: inputs.isPublic,
       source: {
         type: 'object',
-        object: {
-          object_id: uploadResult.objectId,
-          agent_setup: inputs.setupCommands || [],
-        },
+        object: objectSource,
       },
     },
   });
@@ -148,7 +175,7 @@ async function deployTarAgent(
   return {
     agentId: agent.id,
     agentName: agent.name,
-    objectId: uploadResult.objectId,
+    objectId: firstObjectId,
   };
 }
 
