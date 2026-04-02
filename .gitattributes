@@ -1,2 +1,2 @@
 # Mark dist folder as generated
-dist/** linguist-generated=true
+dist/** -diff -merge linguist-generated=true

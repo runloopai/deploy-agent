@@ -61,11 +61,6 @@ inputs:
     description: 'Newline-separated setup commands to run after agent installation'
     required: false
 
-  is-public:
-    description: 'Whether the agent should be publicly accessible'
-    required: false
-    default: 'false'
-
   api-url:
     description: 'Runloop API URL (defaults to production)'
     required: false

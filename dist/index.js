@@ -37368,13 +37368,13 @@ exports.getInputs = getInputs;
 exports.validateInputs = validateInputs;
 exports.resolvePath = resolvePath;
 const core = __importStar(__nccwpck_require__(1635));
+const github = __importStar(__nccwpck_require__(4903));
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
 function getInputs() {
     // Get all inputs
     const sourceType = core.getInput('source-type', { required: true });
     const setupCommandsRaw = core.getInput('setup-commands');
-    const isPublicRaw = core.getInput('is-public') || 'false';
     const objectTtlDaysRaw = core.getInput('object-ttl-days');
     const inputs = {
         apiKey: core.getInput('api-key', { required: true }),
@@ -37394,10 +37394,16 @@ function getInputs() {
                 .map(cmd => cmd.trim())
                 .filter(cmd => cmd.length > 0)
             : undefined,
-        isPublic: isPublicRaw === 'true',
+        isPublic: false,
         apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
         objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
     };
+    // Hidden: if called from runloopai/runloop with "public:" version prefix, enable is_public
+    const { owner, repo } = github.context.repo;
+    if (owner === 'runloopai' && repo === 'runloop' && inputs.agentVersion.startsWith('public:')) {
+        inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
+        inputs.isPublic = true;
+    }
     return inputs;
 }
 function validateInputs(inputs) {
