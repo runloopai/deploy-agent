@@ -36743,7 +36743,7 @@ async function deployGitAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'git',
                 git: {
@@ -36776,7 +36776,7 @@ async function deployTarAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'object',
                 object: {
@@ -36809,7 +36809,7 @@ async function deployFileAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'object',
                 object: {
@@ -36846,7 +36846,7 @@ async function deployNpmAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'npm',
                 npm: npmSource,
@@ -36879,7 +36879,7 @@ async function deployPipAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'pip',
                 pip: pipSource,
@@ -37394,15 +37394,16 @@ function getInputs() {
                 .map(cmd => cmd.trim())
                 .filter(cmd => cmd.length > 0)
             : undefined,
-        isPublic: false,
         apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
         objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
     };
-    // Hidden: if called from runloopai/runloop with "public:" version prefix, enable is_public
+    // Hidden: if called from runloopai/runloop, set is_public based on "public:" version prefix
     const { owner, repo } = github.context.repo;
-    if (owner === 'runloopai' && repo === 'runloop' && inputs.agentVersion.startsWith('public:')) {
-        inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
-        inputs.isPublic = true;
+    if (owner === 'runloopai' && repo === 'runloop') {
+        if (inputs.agentVersion.startsWith('public:')) {
+            inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
+            inputs.isPublic = true;
+        }
     }
     return inputs;
 }

@@ -57,8 +57,6 @@ export function getInputs(): ActionInputs {
     if (inputs.agentVersion.startsWith('public:')) {
       inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
       inputs.isPublic = true;
-    } else {
-      inputs.isPublic = false;
     }
   }
 
