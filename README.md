@@ -41,7 +41,6 @@ That's it! The action will automatically use your current repository and commit 
 | `git-ref` | | current commit/tag | Git ref (branch/tag/commit SHA, auto-detected) |
 | `path` | | | Path to tar archive or single file (required for `tar`/`file`) |
 | `setup-commands` | | | Newline-separated setup commands to run after installation |
-| `is-public` | | `false` | Whether the agent should be publicly accessible |
 | `api-url` | | `https://api.runloop.ai` | Runloop API URL |
 | `object-ttl-days` | | | Time-to-live for uploaded objects in days |
 

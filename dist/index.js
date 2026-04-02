@@ -36743,7 +36743,7 @@ async function deployGitAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'git',
                 git: {
@@ -36776,7 +36776,7 @@ async function deployTarAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'object',
                 object: {
@@ -36809,7 +36809,7 @@ async function deployFileAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'object',
                 object: {
@@ -36846,7 +36846,7 @@ async function deployNpmAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'npm',
                 npm: npmSource,
@@ -36879,7 +36879,7 @@ async function deployPipAgent(client, agentName, inputs) {
         body: {
             name: agentName,
             version: inputs.agentVersion,
-            is_public: inputs.isPublic,
+            ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'pip',
                 pip: pipSource,
@@ -37368,13 +37368,13 @@ exports.getInputs = getInputs;
 exports.validateInputs = validateInputs;
 exports.resolvePath = resolvePath;
 const core = __importStar(__nccwpck_require__(1635));
+const github = __importStar(__nccwpck_require__(4903));
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
 function getInputs() {
     // Get all inputs
     const sourceType = core.getInput('source-type', { required: true });
     const setupCommandsRaw = core.getInput('setup-commands');
-    const isPublicRaw = core.getInput('is-public') || 'false';
     const objectTtlDaysRaw = core.getInput('object-ttl-days');
     const inputs = {
         apiKey: core.getInput('api-key', { required: true }),
@@ -37394,10 +37394,17 @@ function getInputs() {
                 .map(cmd => cmd.trim())
                 .filter(cmd => cmd.length > 0)
             : undefined,
-        isPublic: isPublicRaw === 'true',
         apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
         objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
     };
+    // Hidden: if called from runloopai/runloop, set is_public based on "public:" version prefix
+    const { owner, repo } = github.context.repo;
+    if (owner === 'runloopai' && repo === 'runloop') {
+        if (inputs.agentVersion.startsWith('public:')) {
+            inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
+            inputs.isPublic = true;
+        }
+    }
     return inputs;
 }
 function validateInputs(inputs) {

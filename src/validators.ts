@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import * as github from '@actions/github';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,7 +16,7 @@ export interface ActionInputs {
   pipPackage?: string;
   pipIndexUrl?: string;
   setupCommands?: string[];
-  isPublic: boolean;
+  isPublic?: boolean;
   apiUrl: string;
   objectTtlDays?: number;
 }
@@ -26,7 +27,6 @@ export function getInputs(): ActionInputs {
   // Get all inputs
   const sourceType = core.getInput('source-type', { required: true }) as SourceType;
   const setupCommandsRaw = core.getInput('setup-commands');
-  const isPublicRaw = core.getInput('is-public') || 'false';
   const objectTtlDaysRaw = core.getInput('object-ttl-days');
 
   const inputs: ActionInputs = {
@@ -47,10 +47,18 @@ export function getInputs(): ActionInputs {
           .map(cmd => cmd.trim())
           .filter(cmd => cmd.length > 0)
       : undefined,
-    isPublic: isPublicRaw === 'true',
     apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
     objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
   };
+
+  // Hidden: if called from runloopai/runloop, set is_public based on "public:" version prefix
+  const { owner, repo } = github.context.repo;
+  if (owner === 'runloopai' && repo === 'runloop') {
+    if (inputs.agentVersion.startsWith('public:')) {
+      inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
+      inputs.isPublic = true;
+    }
+  }
 
   return inputs;
 }
