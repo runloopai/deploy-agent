@@ -16,18 +16,21 @@ export interface ActionInputs {
   pipPackage?: string;
   pipIndexUrl?: string;
   setupCommands?: string[];
+  contentType?: ContentType;
   isPublic?: boolean;
   apiUrl: string;
   objectTtlDays?: number;
 }
 
 export type SourceType = 'git' | 'tar' | 'file' | 'npm' | 'pip';
+export type ContentType = 'unspecified' | 'text' | 'binary' | 'gzip' | 'tar' | 'tgz';
 
 export function getInputs(): ActionInputs {
   // Get all inputs
   const sourceType = core.getInput('source-type', { required: true }) as SourceType;
   const setupCommandsRaw = core.getInput('setup-commands');
   const objectTtlDaysRaw = core.getInput('object-ttl-days');
+  const contentTypeRaw = core.getInput('content-type') || undefined;
 
   const inputs: ActionInputs = {
     apiKey: core.getInput('api-key', { required: true }),
@@ -47,6 +50,7 @@ export function getInputs(): ActionInputs {
           .map(cmd => cmd.trim())
           .filter(cmd => cmd.length > 0)
       : undefined,
+    contentType: contentTypeRaw as ContentType | undefined,
     apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
     objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
   };
@@ -70,6 +74,23 @@ export function validateInputs(inputs: ActionInputs): void {
     throw new Error(
       `Invalid source-type: ${inputs.sourceType}. Must be one of: ${validSourceTypes.join(', ')}`
     );
+  }
+
+  // Validate content-type if provided
+  if (inputs.contentType) {
+    const validContentTypes: ContentType[] = [
+      'unspecified',
+      'text',
+      'binary',
+      'gzip',
+      'tar',
+      'tgz',
+    ];
+    if (!validContentTypes.includes(inputs.contentType)) {
+      throw new Error(
+        `Invalid content-type: ${inputs.contentType}. Must be one of: ${validContentTypes.join(', ')}`
+      );
+    }
   }
 
   // Validate source-specific inputs

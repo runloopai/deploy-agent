@@ -56,6 +56,10 @@ inputs:
     description: 'Path to file or tar archive (required if source-type=tar/file)'
     required: false
 
+  content-type:
+    description: 'Object content type override (unspecified, text, binary, gzip, tar, tgz). If omitted, auto-detected from file extension and magic bytes.'
+    required: false
+
   # Common inputs
   setup-commands:
     description: 'Newline-separated setup commands to run after agent installation'

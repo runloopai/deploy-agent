@@ -36769,7 +36769,7 @@ async function deployTarAgent(client, agentName, inputs) {
     }
     const tarPath = (0, validators_1.resolvePath)(inputs.path);
     // Upload tar file
-    const uploadResult = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays, inputs.isPublic);
+    const uploadResult = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays, inputs.isPublic, inputs.contentType);
     // Create agent with object source
     // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
     const agent = await client.api.post('/v1/agents', {
@@ -36802,7 +36802,7 @@ async function deployFileAgent(client, agentName, inputs) {
     }
     const filePath = (0, validators_1.resolvePath)(inputs.path);
     // Upload single file
-    const uploadResult = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, inputs.isPublic);
+    const uploadResult = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, inputs.isPublic, inputs.contentType);
     // Create agent with object source
     // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
     const agent = await client.api.post('/v1/agents', {
@@ -37196,13 +37196,15 @@ const path = __importStar(__nccwpck_require__(6928));
 /**
  * Upload a tar.gz file directly.
  */
-async function uploadTarFile(client, filePath, ttlDays, isPublic) {
+async function uploadTarFile(client, filePath, ttlDays, isPublic, contentTypeOverride) {
     core.info(`Uploading tar file: ${filePath}`);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
-    // Determine content type based on file extension
     let contentType;
-    if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
+    if (contentTypeOverride) {
+        contentType = contentTypeOverride;
+    }
+    else if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
         contentType = 'tgz';
     }
     else if (fileName.endsWith('.tar')) {
@@ -37219,12 +37221,11 @@ async function uploadTarFile(client, filePath, ttlDays, isPublic) {
 /**
  * Upload a single file (text or binary).
  */
-async function uploadSingleFile(client, filePath, ttlDays, isPublic) {
+async function uploadSingleFile(client, filePath, ttlDays, isPublic, contentTypeOverride) {
     core.info(`Uploading single file: ${filePath}`);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
-    // Determine content type based on file
-    const contentType = determineContentType(fileName, fileBuffer);
+    const contentType = contentTypeOverride ?? determineContentType(fileName, fileBuffer);
     return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
 }
 /**
@@ -37282,45 +37283,99 @@ async function uploadBuffer(client, buffer, objectName, contentType, ttlDays, is
         objectName: objectName,
     };
 }
-/**
- * Determine content type based on file characteristics.
- */
-function determineContentType(fileName, buffer) {
-    // Check file extension first
-    if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
-        return 'tgz';
+// Magic byte signatures
+const GZIP_MAGIC = [0x1f, 0x8b];
+// Tar header: bytes 257-261 should be "ustar" in valid tar archives
+const TAR_MAGIC_OFFSET = 257;
+const TAR_MAGIC = [0x75, 0x73, 0x74, 0x61, 0x72]; // "ustar"
+function hasGzipHeader(buffer) {
+    return buffer.length >= 2 && buffer[0] === GZIP_MAGIC[0] && buffer[1] === GZIP_MAGIC[1];
+}
+function hasTarHeader(buffer) {
+    if (buffer.length < TAR_MAGIC_OFFSET + TAR_MAGIC.length)
+        return false;
+    return TAR_MAGIC.every((byte, i) => buffer[TAR_MAGIC_OFFSET + i] === byte);
+}
+function hasTarHeaderInGzip(buffer) {
+    if (!hasGzipHeader(buffer))
+        return false;
+    try {
+        const zlib = __nccwpck_require__(3106);
+        // Decompress enough to check the tar header (first 512 bytes of the tar)
+        const decompressed = zlib.gunzipSync(buffer, { maxOutputLength: 512 });
+        return hasTarHeader(decompressed);
     }
-    if (fileName.endsWith('.tar')) {
-        return 'tar';
+    catch {
+        return false;
     }
-    if (fileName.endsWith('.gz')) {
-        return 'gzip';
-    }
-    // Check if file is text by looking at content
-    // If it's mostly ASCII/UTF-8 printable characters, treat as text
-    const sample = buffer.slice(0, Math.min(1024, buffer.length));
+}
+function isTextContent(buffer) {
+    const sample = buffer.subarray(0, Math.min(1024, buffer.length));
     let textBytes = 0;
     for (const byte of sample) {
-        // Count printable ASCII and common whitespace
         if ((byte >= 32 && byte <= 126) || byte === 9 || byte === 10 || byte === 13) {
             textBytes++;
         }
     }
-    const textRatio = textBytes / sample.length;
-    return textRatio > 0.85 ? 'text' : 'binary';
+    return sample.length > 0 && textBytes / sample.length > 0.85;
+}
+/**
+ * Determine content type by cross-referencing file extension with actual
+ * file contents (magic bytes). Falls back to content-based heuristics
+ * when no extension match.
+ */
+function determineContentType(fileName, buffer) {
+    // .tar.gz / .tgz — verify gzip header and tar inside
+    if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
+        if (hasGzipHeader(buffer) && hasTarHeaderInGzip(buffer))
+            return 'tgz';
+        if (hasGzipHeader(buffer))
+            return 'gzip';
+        core.warning(`${fileName} has .tgz extension but no valid gzip+tar content`);
+        return 'binary';
+    }
+    // .tar — verify tar header
+    if (fileName.endsWith('.tar')) {
+        if (hasTarHeader(buffer))
+            return 'tar';
+        core.warning(`${fileName} has .tar extension but no valid tar header`);
+        return 'binary';
+    }
+    // .gz — verify gzip header, check if tar inside
+    if (fileName.endsWith('.gz')) {
+        if (hasGzipHeader(buffer)) {
+            if (hasTarHeaderInGzip(buffer))
+                return 'tgz';
+            return 'gzip';
+        }
+        core.warning(`${fileName} has .gz extension but no valid gzip header`);
+        return 'binary';
+    }
+    // No archive extension — pure content-based detection
+    if (hasGzipHeader(buffer)) {
+        if (hasTarHeaderInGzip(buffer))
+            return 'tgz';
+        return 'gzip';
+    }
+    if (hasTarHeader(buffer))
+        return 'tar';
+    if (isTextContent(buffer))
+        return 'text';
+    return 'binary';
 }
 /**
  * Get HTTP Content-Type header for object upload.
  */
 function getContentTypeHeader(contentType) {
     const contentTypeMap = {
+        unspecified: 'application/octet-stream',
         text: 'text/plain',
         binary: 'application/octet-stream',
         gzip: 'application/gzip',
         tar: 'application/x-tar',
         tgz: 'application/gzip',
     };
-    return contentTypeMap[contentType] || 'application/octet-stream';
+    return contentTypeMap[contentType];
 }
 
 
@@ -37377,6 +37432,7 @@ function getInputs() {
     const sourceType = core.getInput('source-type', { required: true });
     const setupCommandsRaw = core.getInput('setup-commands');
     const objectTtlDaysRaw = core.getInput('object-ttl-days');
+    const contentTypeRaw = core.getInput('content-type') || undefined;
     const inputs = {
         apiKey: core.getInput('api-key', { required: true }),
         sourceType,
@@ -37395,6 +37451,7 @@ function getInputs() {
                 .map(cmd => cmd.trim())
                 .filter(cmd => cmd.length > 0)
             : undefined,
+        contentType: contentTypeRaw,
         apiUrl: core.getInput('api-url') || 'https://api.runloop.ai',
         objectTtlDays: objectTtlDaysRaw ? parseInt(objectTtlDaysRaw, 10) : undefined,
     };
@@ -37413,6 +37470,13 @@ function validateInputs(inputs) {
     const validSourceTypes = ['git', 'tar', 'file', 'npm', 'pip'];
     if (!validSourceTypes.includes(inputs.sourceType)) {
         throw new Error(`Invalid source-type: ${inputs.sourceType}. Must be one of: ${validSourceTypes.join(', ')}`);
+    }
+    // Validate content-type if provided
+    if (inputs.contentType) {
+        const validContentTypes = ['unspecified', 'text', 'binary', 'gzip', 'tar', 'tgz'];
+        if (!validContentTypes.includes(inputs.contentType)) {
+            throw new Error(`Invalid content-type: ${inputs.contentType}. Must be one of: ${validContentTypes.join(', ')}`);
+        }
     }
     // Validate source-specific inputs
     switch (inputs.sourceType) {
