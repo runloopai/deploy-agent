@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as fs from 'fs';
 import * as path from 'path';
 import { RunloopSDK } from '@runloop/api-client';
+import { ContentType } from './validators';
 
 export interface UploadResult {
   objectId: string;
@@ -15,16 +16,18 @@ export async function uploadTarFile(
   client: RunloopSDK,
   filePath: string,
   ttlDays?: number,
-  isPublic?: boolean
+  isPublic?: boolean,
+  contentTypeOverride?: ContentType
 ): Promise<UploadResult> {
   core.info(`Uploading tar file: ${filePath}`);
 
   const fileBuffer = fs.readFileSync(filePath);
   const fileName = path.basename(filePath);
 
-  // Determine content type based on file extension
-  let contentType: 'tgz' | 'tar' | 'gzip';
-  if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
+  let contentType: ContentType;
+  if (contentTypeOverride) {
+    contentType = contentTypeOverride;
+  } else if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
     contentType = 'tgz';
   } else if (fileName.endsWith('.tar')) {
     contentType = 'tar';
@@ -44,15 +47,15 @@ export async function uploadSingleFile(
   client: RunloopSDK,
   filePath: string,
   ttlDays?: number,
-  isPublic?: boolean
+  isPublic?: boolean,
+  contentTypeOverride?: ContentType
 ): Promise<UploadResult> {
   core.info(`Uploading single file: ${filePath}`);
 
   const fileBuffer = fs.readFileSync(filePath);
   const fileName = path.basename(filePath);
 
-  // Determine content type based on file
-  const contentType = determineContentType(fileName, fileBuffer);
+  const contentType = contentTypeOverride ?? determineContentType(fileName, fileBuffer);
 
   return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
 }
@@ -68,7 +71,7 @@ async function uploadBuffer(
   client: RunloopSDK,
   buffer: Buffer,
   objectName: string,
-  contentType: 'text' | 'binary' | 'gzip' | 'tar' | 'tgz',
+  contentType: ContentType,
   ttlDays?: number,
   isPublic?: boolean
 ): Promise<UploadResult> {
@@ -133,45 +136,91 @@ async function uploadBuffer(
   };
 }
 
-/**
- * Determine content type based on file characteristics.
- */
-function determineContentType(
-  fileName: string,
-  buffer: Buffer
-): 'text' | 'binary' | 'gzip' | 'tar' | 'tgz' {
-  // Check file extension first
-  if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
-    return 'tgz';
-  }
-  if (fileName.endsWith('.tar')) {
-    return 'tar';
-  }
-  if (fileName.endsWith('.gz')) {
-    return 'gzip';
-  }
+// Magic byte signatures
+const GZIP_MAGIC = [0x1f, 0x8b];
+// Tar header: bytes 257-261 should be "ustar" in valid tar archives
+const TAR_MAGIC_OFFSET = 257;
+const TAR_MAGIC = [0x75, 0x73, 0x74, 0x61, 0x72]; // "ustar"
 
-  // Check if file is text by looking at content
-  // If it's mostly ASCII/UTF-8 printable characters, treat as text
-  const sample = buffer.slice(0, Math.min(1024, buffer.length));
+function hasGzipHeader(buffer: Buffer): boolean {
+  return buffer.length >= 2 && buffer[0] === GZIP_MAGIC[0] && buffer[1] === GZIP_MAGIC[1];
+}
+
+function hasTarHeader(buffer: Buffer): boolean {
+  if (buffer.length < TAR_MAGIC_OFFSET + TAR_MAGIC.length) return false;
+  return TAR_MAGIC.every((byte, i) => buffer[TAR_MAGIC_OFFSET + i] === byte);
+}
+
+function hasTarHeaderInGzip(buffer: Buffer): boolean {
+  if (!hasGzipHeader(buffer)) return false;
+  try {
+    const zlib = require('zlib');
+    // Decompress enough to check the tar header (first 512 bytes of the tar)
+    const decompressed = zlib.gunzipSync(buffer, { maxOutputLength: 512 });
+    return hasTarHeader(decompressed);
+  } catch {
+    return false;
+  }
+}
+
+function isTextContent(buffer: Buffer): boolean {
+  const sample = buffer.subarray(0, Math.min(1024, buffer.length));
   let textBytes = 0;
-
   for (const byte of sample) {
-    // Count printable ASCII and common whitespace
     if ((byte >= 32 && byte <= 126) || byte === 9 || byte === 10 || byte === 13) {
       textBytes++;
     }
   }
+  return sample.length > 0 && textBytes / sample.length > 0.85;
+}
 
-  const textRatio = textBytes / sample.length;
-  return textRatio > 0.85 ? 'text' : 'binary';
+/**
+ * Determine content type by cross-referencing file extension with actual
+ * file contents (magic bytes). Falls back to content-based heuristics
+ * when no extension match.
+ */
+function determineContentType(fileName: string, buffer: Buffer): ContentType {
+  // .tar.gz / .tgz — verify gzip header and tar inside
+  if (fileName.endsWith('.tar.gz') || fileName.endsWith('.tgz')) {
+    if (hasGzipHeader(buffer) && hasTarHeaderInGzip(buffer)) return 'tgz';
+    if (hasGzipHeader(buffer)) return 'gzip';
+    core.warning(`${fileName} has .tgz extension but no valid gzip+tar content`);
+    return 'binary';
+  }
+
+  // .tar — verify tar header
+  if (fileName.endsWith('.tar')) {
+    if (hasTarHeader(buffer)) return 'tar';
+    core.warning(`${fileName} has .tar extension but no valid tar header`);
+    return 'binary';
+  }
+
+  // .gz — verify gzip header, check if tar inside
+  if (fileName.endsWith('.gz')) {
+    if (hasGzipHeader(buffer)) {
+      if (hasTarHeaderInGzip(buffer)) return 'tgz';
+      return 'gzip';
+    }
+    core.warning(`${fileName} has .gz extension but no valid gzip header`);
+    return 'binary';
+  }
+
+  // No archive extension — pure content-based detection
+  if (hasGzipHeader(buffer)) {
+    if (hasTarHeaderInGzip(buffer)) return 'tgz';
+    return 'gzip';
+  }
+  if (hasTarHeader(buffer)) return 'tar';
+  if (isTextContent(buffer)) return 'text';
+  return 'binary';
 }
 
 /**
  * Get HTTP Content-Type header for object upload.
  */
-function getContentTypeHeader(contentType: string): string {
-  const contentTypeMap: Record<string, string> = {
+function getContentTypeHeader(contentType: ContentType): string {
+  const contentTypeMap: Record<ContentType, string> = {
+    unspecified: 'application/octet-stream',
     text: 'text/plain',
     binary: 'application/octet-stream',
     gzip: 'application/gzip',
@@ -179,5 +228,5 @@ function getContentTypeHeader(contentType: string): string {
     tgz: 'application/gzip',
   };
 
-  return contentTypeMap[contentType] || 'application/octet-stream';
+  return contentTypeMap[contentType];
 }
