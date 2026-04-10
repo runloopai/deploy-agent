@@ -37190,6 +37190,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.uploadTarFile = uploadTarFile;
 exports.uploadSingleFile = uploadSingleFile;
+exports.determineContentType = determineContentType;
 const core = __importStar(__nccwpck_require__(1635));
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
@@ -37218,14 +37219,14 @@ async function uploadTarFile(client, filePath, ttlDays, isPublic) {
 }
 /**
  * Upload a single file (text or binary).
+ * Always uses 'binary' content type so rage places the file as-is
+ * instead of extracting it (which it would do for tar/tgz).
  */
 async function uploadSingleFile(client, filePath, ttlDays, isPublic) {
     core.info(`Uploading single file: ${filePath}`);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
-    // Determine content type based on file
-    const contentType = determineContentType(fileName, fileBuffer);
-    return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
+    return uploadBuffer(client, fileBuffer, fileName, 'binary', ttlDays, isPublic);
 }
 /**
  * Upload a buffer to Runloop as an object.

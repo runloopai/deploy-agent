@@ -39,6 +39,8 @@ export async function uploadTarFile(
 
 /**
  * Upload a single file (text or binary).
+ * Always uses 'binary' content type so rage places the file as-is
+ * instead of extracting it (which it would do for tar/tgz).
  */
 export async function uploadSingleFile(
   client: RunloopSDK,
@@ -51,10 +53,7 @@ export async function uploadSingleFile(
   const fileBuffer = fs.readFileSync(filePath);
   const fileName = path.basename(filePath);
 
-  // Determine content type based on file
-  const contentType = determineContentType(fileName, fileBuffer);
-
-  return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
+  return uploadBuffer(client, fileBuffer, fileName, 'binary', ttlDays, isPublic);
 }
 
 /**
@@ -136,7 +135,7 @@ async function uploadBuffer(
 /**
  * Determine content type based on file characteristics.
  */
-function determineContentType(
+export function determineContentType(
   fileName: string,
   buffer: Buffer
 ): 'text' | 'binary' | 'gzip' | 'tar' | 'tgz' {
