@@ -126,7 +126,7 @@ async function deployTarAgent(
   const tarPath = resolvePath(inputs.path);
 
   // Upload tar file
-  const uploadResult = await uploadTarFile(client, tarPath, inputs.objectTtlDays);
+  const uploadResult = await uploadTarFile(client, tarPath, inputs.objectTtlDays, inputs.isPublic);
 
   // Create agent with object source
   // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
@@ -169,7 +169,12 @@ async function deployFileAgent(
   const filePath = resolvePath(inputs.path);
 
   // Upload single file
-  const uploadResult = await uploadSingleFile(client, filePath, inputs.objectTtlDays);
+  const uploadResult = await uploadSingleFile(
+    client,
+    filePath,
+    inputs.objectTtlDays,
+    inputs.isPublic
+  );
 
   // Create agent with object source
   // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams

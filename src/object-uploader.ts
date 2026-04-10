@@ -14,7 +14,8 @@ export interface UploadResult {
 export async function uploadTarFile(
   client: RunloopSDK,
   filePath: string,
-  ttlDays?: number
+  ttlDays?: number,
+  isPublic?: boolean
 ): Promise<UploadResult> {
   core.info(`Uploading tar file: ${filePath}`);
 
@@ -33,7 +34,7 @@ export async function uploadTarFile(
     throw new Error(`Unsupported tar file extension: ${fileName}`);
   }
 
-  return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays);
+  return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
 }
 
 /**
@@ -42,7 +43,8 @@ export async function uploadTarFile(
 export async function uploadSingleFile(
   client: RunloopSDK,
   filePath: string,
-  ttlDays?: number
+  ttlDays?: number,
+  isPublic?: boolean
 ): Promise<UploadResult> {
   core.info(`Uploading single file: ${filePath}`);
 
@@ -52,7 +54,7 @@ export async function uploadSingleFile(
   // Determine content type based on file
   const contentType = determineContentType(fileName, fileBuffer);
 
-  return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays);
+  return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
 }
 
 /**
@@ -67,7 +69,8 @@ async function uploadBuffer(
   buffer: Buffer,
   objectName: string,
   contentType: 'text' | 'binary' | 'gzip' | 'tar' | 'tgz',
-  ttlDays?: number
+  ttlDays?: number,
+  isPublic?: boolean
 ): Promise<UploadResult> {
   core.info(`Starting object upload: ${objectName} (${buffer.length} bytes, type: ${contentType})`);
 
@@ -81,6 +84,7 @@ async function uploadBuffer(
       uploaded_at: new Date().toISOString(),
     },
     ...(ttlMs && { ttl_ms: ttlMs }),
+    ...(isPublic && { is_public: true }),
   };
 
   core.info('Creating object...');
