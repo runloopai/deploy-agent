@@ -36769,7 +36769,7 @@ async function deployTarAgent(client, agentName, inputs) {
     }
     const tarPath = (0, validators_1.resolvePath)(inputs.path);
     // Upload tar file
-    const uploadResult = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays);
+    const uploadResult = await (0, object_uploader_1.uploadTarFile)(client, tarPath, inputs.objectTtlDays, inputs.isPublic);
     // Create agent with object source
     // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
     const agent = await client.api.post('/v1/agents', {
@@ -36802,7 +36802,7 @@ async function deployFileAgent(client, agentName, inputs) {
     }
     const filePath = (0, validators_1.resolvePath)(inputs.path);
     // Upload single file
-    const uploadResult = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays);
+    const uploadResult = await (0, object_uploader_1.uploadSingleFile)(client, filePath, inputs.objectTtlDays, inputs.isPublic);
     // Create agent with object source
     // Using client.api.post because SDK v1.0.0 types are missing 'version' field in AgentCreateParams
     const agent = await client.api.post('/v1/agents', {
@@ -37196,7 +37196,7 @@ const path = __importStar(__nccwpck_require__(6928));
 /**
  * Upload a tar.gz file directly.
  */
-async function uploadTarFile(client, filePath, ttlDays) {
+async function uploadTarFile(client, filePath, ttlDays, isPublic) {
     core.info(`Uploading tar file: ${filePath}`);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
@@ -37214,18 +37214,18 @@ async function uploadTarFile(client, filePath, ttlDays) {
     else {
         throw new Error(`Unsupported tar file extension: ${fileName}`);
     }
-    return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays);
+    return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
 }
 /**
  * Upload a single file (text or binary).
  */
-async function uploadSingleFile(client, filePath, ttlDays) {
+async function uploadSingleFile(client, filePath, ttlDays, isPublic) {
     core.info(`Uploading single file: ${filePath}`);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
     // Determine content type based on file
     const contentType = determineContentType(fileName, fileBuffer);
-    return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays);
+    return uploadBuffer(client, fileBuffer, fileName, contentType, ttlDays, isPublic);
 }
 /**
  * Upload a buffer to Runloop as an object.
@@ -37234,7 +37234,7 @@ async function uploadSingleFile(client, filePath, ttlDays) {
  * 2. Upload to presigned URL
  * 3. Complete the upload
  */
-async function uploadBuffer(client, buffer, objectName, contentType, ttlDays) {
+async function uploadBuffer(client, buffer, objectName, contentType, ttlDays, isPublic) {
     core.info(`Starting object upload: ${objectName} (${buffer.length} bytes, type: ${contentType})`);
     // Step 1: Create object and get presigned URL
     const ttlMs = ttlDays ? ttlDays * 24 * 60 * 60 * 1000 : undefined;
@@ -37246,6 +37246,7 @@ async function uploadBuffer(client, buffer, objectName, contentType, ttlDays) {
             uploaded_at: new Date().toISOString(),
         },
         ...(ttlMs && { ttl_ms: ttlMs }),
+        ...(isPublic && { is_public: true }),
     };
     core.info('Creating object...');
     const createdObject = await client.api.objects.create(createParams);
