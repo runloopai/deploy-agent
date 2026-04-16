@@ -1,2 +1,6 @@
 # Mark dist folder as generated
-dist/** -diff -merge linguist-generated=true
+dist/** -diff -merge linguist-generated
+dist/licenses.txt -merge linguist-vendored
+
+pnpm-lock.yaml -merge linguist-vendored
+

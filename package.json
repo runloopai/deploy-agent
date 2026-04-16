@@ -30,7 +30,7 @@
     "tar-stream": "^3.1.7"
   },
   "devDependencies": {
-    "@types/node": "^20.19.26",
+    "@types/node": "^24.0.0",
     "@types/tar-stream": "^3.1.4",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
@@ -42,6 +42,6 @@
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   }
 }
