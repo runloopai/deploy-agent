@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as zlib from 'zlib';
 import { RunloopSDK } from '@runloop/api-client';
 import { ContentType } from './validators';
 
@@ -154,8 +155,6 @@ function hasTarHeader(buffer: Buffer): boolean {
 function hasTarHeaderInGzip(buffer: Buffer): boolean {
   if (!hasGzipHeader(buffer)) return false;
   try {
-    const zlib = require('zlib');
-    // Decompress enough to check the tar header (first 512 bytes of the tar)
     const decompressed = zlib.gunzipSync(buffer, { maxOutputLength: 512 });
     return hasTarHeader(decompressed);
   } catch {

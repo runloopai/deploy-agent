@@ -37193,6 +37193,7 @@ exports.uploadSingleFile = uploadSingleFile;
 const core = __importStar(__nccwpck_require__(1635));
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
+const zlib = __importStar(__nccwpck_require__(3106));
 /**
  * Upload a tar.gz file directly.
  */
@@ -37300,8 +37301,6 @@ function hasTarHeaderInGzip(buffer) {
     if (!hasGzipHeader(buffer))
         return false;
     try {
-        const zlib = __nccwpck_require__(3106);
-        // Decompress enough to check the tar header (first 512 bytes of the tar)
         const decompressed = zlib.gunzipSync(buffer, { maxOutputLength: 512 });
         return hasTarHeader(decompressed);
     }
@@ -37473,7 +37472,14 @@ function validateInputs(inputs) {
     }
     // Validate content-type if provided
     if (inputs.contentType) {
-        const validContentTypes = ['unspecified', 'text', 'binary', 'gzip', 'tar', 'tgz'];
+        const validContentTypes = [
+            'unspecified',
+            'text',
+            'binary',
+            'gzip',
+            'tar',
+            'tgz',
+        ];
         if (!validContentTypes.includes(inputs.contentType)) {
             throw new Error(`Invalid content-type: ${inputs.contentType}. Must be one of: ${validContentTypes.join(', ')}`);
         }

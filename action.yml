@@ -86,5 +86,5 @@ outputs:
     description: 'The final name of the created agent'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
