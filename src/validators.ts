@@ -7,7 +7,7 @@ export interface ActionInputs {
   apiKey: string;
   sourceType: SourceType;
   agentName?: string;
-  agentVersion: string;
+  agentVersion?: string;
   gitRepository?: string;
   gitRef?: string;
   path?: string;
@@ -36,7 +36,7 @@ export function getInputs(): ActionInputs {
     apiKey: core.getInput('api-key', { required: true }),
     sourceType,
     agentName: core.getInput('agent-name') || undefined,
-    agentVersion: core.getInput('agent-version', { required: true }),
+    agentVersion: core.getInput('agent-version') || undefined,
     gitRepository: core.getInput('git-repository') || undefined,
     gitRef: core.getInput('git-ref') || undefined,
     path: core.getInput('path') || undefined,
@@ -57,7 +57,7 @@ export function getInputs(): ActionInputs {
 
   // Hidden: if called from runloopai/runloop, set is_public based on "public:" version prefix
   const { owner, repo } = github.context.repo;
-  if (owner === 'runloopai' && repo === 'runloop') {
+  if (owner === 'runloopai' && repo === 'runloop' && inputs.agentVersion) {
     if (inputs.agentVersion.startsWith('public:')) {
       inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
       inputs.isPublic = true;
@@ -132,9 +132,6 @@ export function validateInputs(inputs: ActionInputs): void {
     throw new Error('api-key cannot be empty');
   }
 
-  // Validate agentVersion format (semver or SHA)
-  validateAgentVersion(inputs.agentVersion);
-
   // Validate objectTtlDays if provided
   if (inputs.objectTtlDays !== undefined) {
     if (isNaN(inputs.objectTtlDays) || inputs.objectTtlDays <= 0) {
@@ -169,24 +166,4 @@ export function resolvePath(inputPath: string): string {
   }
 
   return path.isAbsolute(inputPath) ? inputPath : path.join(workspace, inputPath);
-}
-
-// Semver pattern: major.minor.patch with optional pre-release and build metadata
-const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[\w.-]+)?(\+[\w.-]+)?$/;
-
-// Git SHA pattern: 7-40 hex characters (short or full SHA)
-const SHA_REGEX = /^[a-f0-9]{7,40}$/i;
-
-function validateAgentVersion(version: string): void {
-  if (!version || version.trim().length === 0) {
-    throw new Error('agent-version cannot be empty');
-  }
-
-  const trimmed = version.trim();
-
-  if (!SEMVER_REGEX.test(trimmed) && !SHA_REGEX.test(trimmed)) {
-    throw new Error(
-      `Invalid agent-version: "${version}". Must be a semver string (e.g., "2.0.65") or a git SHA (7-40 hex characters).`
-    );
-  }
 }
