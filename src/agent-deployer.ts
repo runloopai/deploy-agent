@@ -90,7 +90,7 @@ async function deployGitAgent(
   const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
-      version: inputs.agentVersion,
+      ...(inputs.agentVersion && { version: inputs.agentVersion }),
       ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
       source: {
         type: 'git',
@@ -139,7 +139,7 @@ async function deployTarAgent(
   const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
-      version: inputs.agentVersion,
+      ...(inputs.agentVersion && { version: inputs.agentVersion }),
       ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
       source: {
         type: 'object',
@@ -188,7 +188,7 @@ async function deployFileAgent(
   const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
-      version: inputs.agentVersion,
+      ...(inputs.agentVersion && { version: inputs.agentVersion }),
       ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
       source: {
         type: 'object',
@@ -234,7 +234,7 @@ async function deployNpmAgent(
   const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
-      version: inputs.agentVersion,
+      ...(inputs.agentVersion && { version: inputs.agentVersion }),
       ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
       source: {
         type: 'npm',
@@ -276,7 +276,7 @@ async function deployPipAgent(
   const agent = await client.api.post<unknown, AgentResponse>('/v1/agents', {
     body: {
       name: agentName,
-      version: inputs.agentVersion,
+      ...(inputs.agentVersion && { version: inputs.agentVersion }),
       ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
       source: {
         type: 'pip',

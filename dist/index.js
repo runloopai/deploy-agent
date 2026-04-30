@@ -36742,7 +36742,7 @@ async function deployGitAgent(client, agentName, inputs) {
     const agent = await client.api.post('/v1/agents', {
         body: {
             name: agentName,
-            version: inputs.agentVersion,
+            ...(inputs.agentVersion && { version: inputs.agentVersion }),
             ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'git',
@@ -36775,7 +36775,7 @@ async function deployTarAgent(client, agentName, inputs) {
     const agent = await client.api.post('/v1/agents', {
         body: {
             name: agentName,
-            version: inputs.agentVersion,
+            ...(inputs.agentVersion && { version: inputs.agentVersion }),
             ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'object',
@@ -36808,7 +36808,7 @@ async function deployFileAgent(client, agentName, inputs) {
     const agent = await client.api.post('/v1/agents', {
         body: {
             name: agentName,
-            version: inputs.agentVersion,
+            ...(inputs.agentVersion && { version: inputs.agentVersion }),
             ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'object',
@@ -36845,7 +36845,7 @@ async function deployNpmAgent(client, agentName, inputs) {
     const agent = await client.api.post('/v1/agents', {
         body: {
             name: agentName,
-            version: inputs.agentVersion,
+            ...(inputs.agentVersion && { version: inputs.agentVersion }),
             ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'npm',
@@ -36878,7 +36878,7 @@ async function deployPipAgent(client, agentName, inputs) {
     const agent = await client.api.post('/v1/agents', {
         body: {
             name: agentName,
-            version: inputs.agentVersion,
+            ...(inputs.agentVersion && { version: inputs.agentVersion }),
             ...(inputs.isPublic !== undefined && { is_public: inputs.isPublic }),
             source: {
                 type: 'pip',
@@ -37436,7 +37436,7 @@ function getInputs() {
         apiKey: core.getInput('api-key', { required: true }),
         sourceType,
         agentName: core.getInput('agent-name') || undefined,
-        agentVersion: core.getInput('agent-version', { required: true }),
+        agentVersion: core.getInput('agent-version') || undefined,
         gitRepository: core.getInput('git-repository') || undefined,
         gitRef: core.getInput('git-ref') || undefined,
         path: core.getInput('path') || undefined,
@@ -37456,7 +37456,7 @@ function getInputs() {
     };
     // Hidden: if called from runloopai/runloop, set is_public based on "public:" version prefix
     const { owner, repo } = github.context.repo;
-    if (owner === 'runloopai' && repo === 'runloop') {
+    if (owner === 'runloopai' && repo === 'runloop' && inputs.agentVersion) {
         if (inputs.agentVersion.startsWith('public:')) {
             inputs.agentVersion = inputs.agentVersion.slice('public:'.length);
             inputs.isPublic = true;
@@ -37517,8 +37517,6 @@ function validateInputs(inputs) {
     if (!inputs.apiKey || inputs.apiKey.trim().length === 0) {
         throw new Error('api-key cannot be empty');
     }
-    // Validate agentVersion format (semver or SHA)
-    validateAgentVersion(inputs.agentVersion);
     // Validate objectTtlDays if provided
     if (inputs.objectTtlDays !== undefined) {
         if (isNaN(inputs.objectTtlDays) || inputs.objectTtlDays <= 0) {
@@ -37547,19 +37545,6 @@ function resolvePath(inputPath) {
         throw new Error('GITHUB_WORKSPACE environment variable is not set');
     }
     return path.isAbsolute(inputPath) ? inputPath : path.join(workspace, inputPath);
-}
-// Semver pattern: major.minor.patch with optional pre-release and build metadata
-const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[\w.-]+)?(\+[\w.-]+)?$/;
-// Git SHA pattern: 7-40 hex characters (short or full SHA)
-const SHA_REGEX = /^[a-f0-9]{7,40}$/i;
-function validateAgentVersion(version) {
-    if (!version || version.trim().length === 0) {
-        throw new Error('agent-version cannot be empty');
-    }
-    const trimmed = version.trim();
-    if (!SEMVER_REGEX.test(trimmed) && !SHA_REGEX.test(trimmed)) {
-        throw new Error(`Invalid agent-version: "${version}". Must be a semver string (e.g., "2.0.65") or a git SHA (7-40 hex characters).`);
-    }
 }
 
 

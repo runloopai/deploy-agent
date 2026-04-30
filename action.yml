@@ -21,8 +21,8 @@ inputs:
     required: false
 
   agent-version:
-    description: 'The version of the Agent. Must be a semver string (e.g., "2.0.65") or a SHA.'
-    required: true
+    description: 'For npm/pip agents, pins the installed package version (e.g., "2.1.123"). Not used for git or object agents.'
+    required: false
 
   # Git source inputs
   git-repository:
@@ -30,7 +30,7 @@ inputs:
     required: false
 
   git-ref:
-    description: 'Git ref (branch/tag/commit SHA). Defaults to current commit or release tag'
+    description: 'Git ref (branch or tag). Defaults to current ref or release tag'
     required: false
 
   # NPM source inputs
